@@ -1,0 +1,26 @@
+[project]
+name = "kelp-survey"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.14"
+dependencies = [
+    "amazon-textract-textractor>=1.10.0",
+    "anthropic>=2.3.0",
+    "boto3>=1.43.122",
+    "google-cloud-documentai>=3.17.0",
+    "gspread>=6.2.1",
+    "httpx>=0.28.1",
+    "jinja2>=3.1.6",
+    "opencv-python-headless>=5.0.0.93",
+    "pandas>=3.1.0",
+    "pydantic>=2.14.2",
+    "pymupdf>=2.0",
+]
+
+[dependency-groups]
+dev = [
+    "boto3-stubs[s3,textract]>=1.43.123",
+    "mypy>=2.4.1",
+    "ruff>=0.17.3",
+]
