@@ -3,7 +3,8 @@
 Every file goes through the asynchronous StartDocumentAnalysis /
 GetDocumentAnalysis API, which takes single- and multi-page PDFs alike, so
 there is one code path. Responses are saved unmodified (apart from joining
-result pages) to data/results/aws_textract/<run_id>/<file>.raw.json.
+result pages) to data/results/aws_textract/<file>.raw.json; the latest run
+of a file replaces the earlier one.
 """
 
 import argparse
@@ -11,7 +12,6 @@ import json
 import logging
 import os
 import time
-from datetime import datetime
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -65,8 +65,8 @@ def wait_for_job(textract: TextractClient, job_id: str) -> dict[str, Any]:
     return result
 
 
-def extract(files: list[str], run_id: str) -> None:
-    """Analyse each file with Textract and save the raw responses locally."""
+def extract(files: list[str]) -> None:
+    """Analyze each file with Textract and save the raw responses locally."""
     bucket = os.environ["S3_BUCKET"]
     region = os.environ["AWS_REGION"]
     textract = boto3.client("textract", region_name=region)
@@ -76,9 +76,7 @@ def extract(files: list[str], run_id: str) -> None:
     log.info(f"started {len(jobs)} Textract jobs")
     for name, job_id in jobs.items():
         response = wait_for_job(textract, job_id)
-        output = Path(
-            "data/results/aws_textract", run_id, f"{Path(name).stem}.raw.json"
-        )
+        output = Path("data/results/aws_textract", f"{Path(name).stem}.raw.json")
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(response))
         pages = response.get("DocumentMetadata", {}).get("Pages")
@@ -99,9 +97,8 @@ def main() -> None:
     )
     args = parser.parse_args()
     files = args.files.read_text().split()
-    run_id = datetime.now().strftime("%Y%m%d-%H%M")
-    log.info(f"run {run_id}: {len(files)} files")
-    extract(files, run_id)
+    log.info(f"extracting {len(files)} files")
+    extract(files)
 
 
 if __name__ == "__main__":

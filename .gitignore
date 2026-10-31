@@ -1,2 +1,3 @@
 local.env
 data/results/
+__pycache__

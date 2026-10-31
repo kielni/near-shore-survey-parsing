@@ -44,7 +44,7 @@ def rotate_form(form: str) -> None:
 
 
 def build_contact_sheet(form: str) -> Path:
-    """Lay out every page of a form's upright PDFs as labelled thumbnails."""
+    """Lay out every page of a form's upright PDFs as labeled thumbnails."""
     page_width, page_height = pymupdf.paper_size("a3-l")
     columns, rows = 6, 5
     cell_width = page_width / columns
