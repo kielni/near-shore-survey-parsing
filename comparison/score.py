@@ -8,9 +8,13 @@ data/answers/fronds/<file>.json, pairs extracted rows with answer plants
   accuracy, and validation-flag precision per rule;
 - errors.csv: every wrong cell, with how its row was paired.
 
-A cell blank in both the answer and the extraction is not scored, so the
-empty F9-F12 of small plants don't pad accuracy. With --split, only sheets
-in that split of data/split.tsv are scored.
+Scoring is per row: each extracted row is compared with the answer plant it
+pairs with, and an extracted row with no plant counts as wrong. An answer
+plant with no extracted row is counted as missed but not scored, since it
+may be on a page that wasn't sent (Handwriting OCR gets only page 1 of
+some sheets). A cell blank in both the answer and the extraction is not
+scored, so the empty F9-F12 of small plants don't pad accuracy. Only sheets
+marked scored in data/split.tsv are scored: version 1.8 sheets with answers.
 """
 
 import argparse
@@ -50,7 +54,7 @@ class ScoredCell(BaseModel):
     expected: str
     correct: bool
     rules: list[str]
-    # How the row was paired: rep, cells, extra or missed; header for the
+    # How the row was paired: rep, cells or extra; header for the
     # page header.
     match: str
     # Answer facts for rare-case accuracy.
@@ -111,9 +115,9 @@ def match_rows(
     2. Leftovers by the most agreeing cells, at least MIN_AGREEMENT, which
        catches misread reps.
     3. What remains: a row whose rep already paired on another page is a
-       transferred copy and is dropped; other extracted rows with values
-       are extra; rows with only row_text (dead plants) are dropped;
-       answer plants are missed.
+       transferred copy and is dropped; so is a row with row_text, since
+       the answers skip dead and missing plants ("MISSING", "Dead?");
+       other extracted rows are extra; answer plants are missed.
 
     Returns the pairs with how each was made, the extra rows and the
     missed plants.
@@ -155,6 +159,7 @@ def match_rows(
         row
         for i, row in enumerate(left_rows)
         if i not in used_rows
+        and not row[1].row_text.value
         and not (row[1].rep.value in reps and (row[1].rep.value, row[0]) not in paired)
     ]
     missed = [a for i, a in enumerate(left_answers) if i not in used_answers]
@@ -174,8 +179,14 @@ def flag_rules(
     return rules
 
 
-def score_sheet(document: SheetDocument, answer: SheetDocument) -> list[ScoredCell]:
-    """Compare one extracted sheet with its answer, cell by cell."""
+def score_sheet(
+    document: SheetDocument, answer: SheetDocument
+) -> tuple[list[ScoredCell], int]:
+    """Compare one extracted sheet with its answer, row by row.
+
+    Returns the compared cells and the number of answer plants with no
+    extracted row, which are not scored.
+    """
     file = document.source.file
     flags = document.flags
     answer_page = answer.pages[0]
@@ -206,7 +217,6 @@ def score_sheet(document: SheetDocument, answer: SheetDocument) -> list[ScoredCe
     compared: list[tuple[tuple[int, Row] | None, Row | None, str]] = [
         *pairs,
         *((row, None, "extra") for row in extra),
-        *((None, plant, "missed") for plant in missed),
     ]
     for found, plant, how in compared:
         page_number, row = found if found else (None, None)
@@ -244,7 +254,7 @@ def score_sheet(document: SheetDocument, answer: SheetDocument) -> list[ScoredCe
                     feet=bool(plant and plant.depth_unit.value == "Feet"),
                 )
             )
-    return cells
+    return cells, len(missed)
 
 
 def accuracy(cells: list[ScoredCell]) -> float | None:
@@ -257,8 +267,8 @@ def precision(flagged: list[ScoredCell]) -> float | None:
     return sum(not c.correct for c in flagged) / len(flagged) if flagged else None
 
 
-def metrics(cells: list[ScoredCell]) -> dict[str, object]:
-    """Compute the scores for a list of compared cells."""
+def metrics(cells: list[ScoredCell], missed: int) -> dict[str, object]:
+    """Compute the scores for the compared cells; missed plants are reported."""
     wrong = [c for c in cells if not c.correct]
     flagged = [c for c in cells if c.rules]
     by_field: dict[str, list[ScoredCell]] = {}
@@ -281,7 +291,8 @@ def metrics(cells: list[ScoredCell]) -> dict[str, object]:
             else None
         ),
         "extra_rows": len({k for k, r in rows.items() if r[0].match == "extra"}),
-        "missed_rows": len({k for k, r in rows.items() if r[0].match == "missed"}),
+        # Answer plants with no extracted row; not in the accuracies.
+        "missed_plants": missed,
         "flag_recall": sum(bool(c.rules) for c in wrong) / len(wrong)
         if wrong
         else None,
@@ -298,47 +309,47 @@ def metrics(cells: list[ScoredCell]) -> dict[str, object]:
     }
 
 
-def load_split(split: str) -> set[str]:
-    """Return the files in one split of data/split.tsv."""
+def scored_files() -> set[str]:
+    """Return the files marked scored in data/split.tsv."""
     with SPLIT.open(newline="") as file:
         return {
             row["file"]
             for row in csv.DictReader(file, delimiter="\t")
-            if row["split"] == split
+            if row["split"] == "scored"
         }
 
 
 def main() -> None:
-    """Parse arguments, score every answered sheet of a service, write results."""
+    """Parse arguments, score every scored sheet of a service, write results."""
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--service", required=True, help="e.g. aws_textract")
-    parser.add_argument(
-        "--split", help="sample or scored; omit to score every answered sheet"
-    )
     args = parser.parse_args()
     results_dir = Path("data/results", args.service)
     paths = mapped_paths(results_dir)
-    allowed = load_split(args.split) if args.split else None
+    allowed = scored_files()
     cells: list[ScoredCell] = []
+    missed = 0
     scored = 0
     for path in paths:
         document = SheetDocument.model_validate_json(path.read_text())
         answer_path = ANSWERS_DIR / path.name
-        if allowed is not None and document.source.file not in allowed:
+        if document.source.file not in allowed:
+            log.info(f"{path.name}: not a scored sheet")
             continue
         if not answer_path.exists():
             log.info(f"{path.name}: no answers, not scored")
             continue
         answer = SheetDocument.model_validate_json(answer_path.read_text())
-        cells.extend(score_sheet(document, answer))
+        sheet_cells, sheet_missed = score_sheet(document, answer)
+        cells.extend(sheet_cells)
+        missed += sheet_missed
         scored += 1
     scores = {
         "service": args.service,
-        "split": args.split,
         "sheets": scored,
     }
-    scores.update(metrics(cells))
+    scores.update(metrics(cells, missed))
     (results_dir / "scores.json").write_text(json.dumps(scores, indent=1))
     with (results_dir / "errors.csv").open("w", newline="") as file:
         columns = [

@@ -42,9 +42,7 @@ validate:
 answers:
 	uv run python -m comparison.answers
 
-# Score one service against the answers, writing scores.json and errors.csv
-# beside its results, e.g. make score SERVICE=aws_textract SPLIT=scored.
-# Leave SPLIT empty to score every answered sheet.
+# Score one service on the sheets marked scored in data/split.tsv, writing
+# scores.json and errors.csv beside its results, e.g. make score SERVICE=aws_textract
 score:
-	uv run python -m comparison.score --service $(SERVICE) \
-		$(if $(SPLIT),--split $(SPLIT))
+	uv run python -m comparison.score --service $(SERVICE)

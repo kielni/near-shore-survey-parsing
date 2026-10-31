@@ -119,6 +119,21 @@ def parse_count(text: Text) -> Cell[int]:
     return Cell(value=whole, raw=text.text, confidence=scaled(text.confidence, factor))
 
 
+def parse_rep(text: Text) -> Cell[int]:
+    """Read a rep, ignoring a mark written beside it.
+
+    Divers tick off plants, and OCR reads the tick as a letter ("J 1",
+    "V 2"). A cell holding exactly one whole number is read as that number,
+    as a guess.
+    """
+    cell = parse_count(text)
+    numbers = re.findall(r"\d+", text.text)
+    if cell.value is None and len(numbers) == 1:
+        confidence = scaled(text.confidence, GUESS_FACTOR)
+        return Cell(value=int(numbers[0]), raw=text.text, confidence=confidence)
+    return cell
+
+
 def parse_length(text: Text) -> tuple[Cell[float], Cell[bool]]:
     """Read a frond length in meters and whether its stipe is broken.
 
@@ -342,7 +357,7 @@ def convert_row(
         if field is None:
             field = "tag:unlabeled"
         if field == "rep":
-            row.rep = parse_count(cell)
+            row.rep = parse_rep(cell)
         elif field == "depth":
             row.depth, depth_unit = parse_depth(cell)
         elif field == "time":

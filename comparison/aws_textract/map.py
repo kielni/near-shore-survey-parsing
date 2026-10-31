@@ -5,8 +5,9 @@ builds a grid (comparison/grid.py) and writes <file>.json next to it.
 
 What the Textract output looks like (checked on the sample sheets):
 
-- Each page has one table: `rep` ... `F12` as its first row, then the 8
-  plant rows. Columns are matched by header text in the grid, since one page
+- Each page has one table with `rep` ... `F12` as its header row, then the 8
+  plant rows. Textract sometimes adds a row above the header (empty, or the
+  SITE box), so the header is the row holding rep and F12. Columns are matched by header text in the grid, since one page
   had an extra empty first column and a "feet time" header.
 - FORMS key-values pair header labels with the wrong value (the date came
   back as the SITE value), so header fields are read from the label lines
@@ -106,13 +107,16 @@ def to_text(entity: Line | Table, text: str, word_confidences: list[float]) -> T
     )
 
 
+def is_header_row(row: list[Text]) -> bool:
+    """Return True if a table row is the printed header: it has rep and F12."""
+    texts = {cell.text.strip().lower() for cell in row}
+    return "rep" in texts and "f12" in texts
+
+
 def find_table(page: Page) -> Table | None:
-    """Return the frond table: the one whose first row has rep and F12."""
+    """Return the frond table: the one with a row holding rep and F12."""
     for table in page.tables:
-        first_row = [
-            c.text.strip().lower() for c in table.table_cells if c.row_index == 1
-        ]
-        if "rep" in first_row and "f12" in first_row:
+        if any(is_header_row(row) for row in table_rows(table)):
             return table
     return max(page.tables, key=lambda t: t.row_count, default=None)
 
@@ -265,7 +269,11 @@ def map_page(page: Page) -> GridPage:
         return GridPage(page=page.page_num, lines=notes)
     table_box = to_text(table, "", []).box
     assert table_box is not None
+    # Textract sometimes adds a row above the printed header (empty, or the
+    # SITE box), so the header is the first row with rep and F12.
     rows = table_rows(table)
+    start = next((i for i, row in enumerate(rows) if is_header_row(row)), 0)
+    rows = rows[start:]
     header, header_used = read_header(lines, table_box.y)
     outside = [
         line
