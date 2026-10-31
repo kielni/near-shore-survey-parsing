@@ -10,9 +10,11 @@ data/answers/fronds/<file>.json, pairs extracted rows with answer plants
 
 Scoring is per row: each extracted row is compared with the answer plant it
 pairs with, and an extracted row with no plant counts as wrong. An answer
-plant with no extracted row is counted as missed but not scored, since it
-may be on a page that wasn't sent (Handwriting OCR gets only page 1 of
-some sheets). A cell blank in both the answer and the extraction is not
+plant with no extracted row is not scored. It is counted as missed only on
+sheets where every page was extracted: the answers don't record pages, so
+on a partial sheet (Handwriting OCR gets only page 1 of some) a plant on a
+page that wasn't sent can't be told from a real miss. Pages not sent don't
+affect any score. A cell blank in both the answer and the extraction is not
 scored, so the empty F9-F12 of small plants don't pad accuracy. Only sheets
 marked scored in data/split.tsv are scored: version 1.8 sheets with answers.
 """
@@ -309,11 +311,11 @@ def metrics(cells: list[ScoredCell], missed: int) -> dict[str, object]:
     }
 
 
-def scored_files() -> set[str]:
-    """Return the files marked scored in data/split.tsv."""
+def scored_files() -> dict[str, int]:
+    """Return the files marked scored in data/split.tsv, with their page counts."""
     with SPLIT.open(newline="") as file:
         return {
-            row["file"]
+            row["file"]: int(row["pages"])
             for row in csv.DictReader(file, delimiter="\t")
             if row["split"] == "scored"
         }
@@ -343,7 +345,12 @@ def main() -> None:
         answer = SheetDocument.model_validate_json(answer_path.read_text())
         sheet_cells, sheet_missed = score_sheet(document, answer)
         cells.extend(sheet_cells)
-        missed += sheet_missed
+        if len(document.pages) < allowed[document.source.file]:
+            log.info(
+                f"{path.name}: not every page extracted, missed plants not counted"
+            )
+        else:
+            missed += sheet_missed
         scored += 1
     scores = {
         "service": args.service,

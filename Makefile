@@ -9,8 +9,8 @@ lint:
 	uv run ruff format .
 	uv run mypy .
 
-# Rotate samples upright, build contact sheets, and upload preprocessed PDFs
-# to S3.
+# Preprocess the scans (rotation), build contact sheets, and upload the
+# preprocessed PDFs to S3.
 prep:
 	uv run python -m comparison.preprocess
 	aws s3 sync data/preprocessed/Fronds s3://$(S3_BUCKET)/Fronds/ \
