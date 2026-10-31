@@ -1,3 +1,4 @@
 local.env
 data/results/
 __pycache__
+google-service-account.json
