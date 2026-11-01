@@ -3,8 +3,9 @@
 Every file goes through the asynchronous StartDocumentAnalysis /
 GetDocumentAnalysis API, which takes single- and multi-page PDFs alike, so
 there is one code path. Responses are saved unmodified (apart from joining
-result pages) to data/results/aws_textract/<file>.raw.json; the latest run
-of a file replaces the earlier one.
+result pages) to data/results/aws_textract/<file>.raw.json. A file whose
+raw.json already exists is skipped; to run it again, clear the results
+(make clean-results SERVICE=aws_textract).
 """
 
 import argparse
@@ -70,13 +71,24 @@ def extract(files: list[str]) -> None:
     bucket = os.environ["S3_BUCKET"]
     region = os.environ["AWS_REGION"]
     textract = boto3.client("textract", region_name=region)
+    outputs = {
+        name: Path("data/results/aws_textract", f"{Path(name).stem}.raw.json")
+        for name in files
+    }
+    for name, output in outputs.items():
+        if output.exists():
+            log.info(f"{name}: {output} exists, skipped")
     # Start every job before waiting on any, so Textract works on them in
     # parallel.
-    jobs = {name: start_job(textract, bucket, name) for name in files}
+    jobs = {
+        name: start_job(textract, bucket, name)
+        for name, output in outputs.items()
+        if not output.exists()
+    }
     log.info(f"started {len(jobs)} Textract jobs")
     for name, job_id in jobs.items():
         response = wait_for_job(textract, job_id)
-        output = Path("data/results/aws_textract", f"{Path(name).stem}.raw.json")
+        output = outputs[name]
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(response))
         pages = response.get("DocumentMetadata", {}).get("Pages")

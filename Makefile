@@ -2,7 +2,7 @@
 export
 
 
-.PHONY: lint prep extract map validate answers score
+.PHONY: lint prep extract map validate answers score clean-results
 
 lint:
 	uv run ruff check --fix .
@@ -46,3 +46,11 @@ answers:
 # scores.json and errors.csv beside its results, e.g. make score SERVICE=aws_textract
 score:
 	uv run python -m comparison.score --service $(SERVICE)
+
+# Delete one service's results, so extract runs its files again, e.g.
+# make clean-results SERVICE=aws_textract, or SERVICE=llm_api/gpt-6-sol for
+# one LLM model.
+clean-results:
+	@test -n "$(SERVICE)" || { echo "usage: make clean-results SERVICE=<service>"; exit 1; }
+	@case "$(SERVICE)" in *..*) echo "SERVICE must not contain .."; exit 1;; esac
+	rm -rf data/results/$(SERVICE)

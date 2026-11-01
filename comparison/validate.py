@@ -11,9 +11,8 @@ on verified sheets (20261016_SQPT01: 10:45, 10:45, 10:34, 11:00, ...).
 
 import argparse
 import logging
-from pathlib import Path
 
-from comparison.config import configure_logging, mapped_paths
+from comparison.config import configure_logging, mapped_paths, results_dirs
 from comparison.schema import METERS_PER_FOOT, Cell, Flag, Page, Row, SheetDocument
 
 log = logging.getLogger("validate")
@@ -156,13 +155,14 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--service", required=True, help="e.g. aws_textract")
     args = parser.parse_args()
-    paths = mapped_paths(Path("data/results", args.service))
-    log.info(f"{args.service}: validating {len(paths)} files")
-    for path in paths:
-        document = SheetDocument.model_validate_json(path.read_text())
-        document.flags = validate(document)
-        path.write_text(document.model_dump_json(indent=1))
-        log.info(f"{path.name}: {len(document.flags)} flags")
+    for folder in results_dirs(args.service):
+        paths = mapped_paths(folder)
+        log.info(f"{folder}: validating {len(paths)} files")
+        for path in paths:
+            document = SheetDocument.model_validate_json(path.read_text())
+            document.flags = validate(document)
+            path.write_text(document.model_dump_json(indent=1))
+            log.info(f"{path.name}: {len(document.flags)} flags")
 
 
 if __name__ == "__main__":

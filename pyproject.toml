@@ -6,12 +6,12 @@ readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
     "amazon-textract-textractor>=1.10.0",
-    "anthropic>=2.3.0",
     "boto3>=1.43.122",
     "google-cloud-documentai>=3.17.0",
     "gspread>=6.2.1",
     "httpx>=0.28.1",
     "jinja2>=3.1.6",
+    "openai>=3.42.0",
     "opencv-python-headless>=5.0.0.93",
     "pandas>=3.1.0",
     "pydantic>=2.14.2",

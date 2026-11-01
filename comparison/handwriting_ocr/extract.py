@@ -5,8 +5,9 @@ sheet. The page is rendered from the preprocessed PDF in data/preprocessed/ to
 PNG, uploaded with action=extractor, polled until processed, and the JSON
 result saved unmodified to data/results/handwriting_ocr/<file>.raw.json.
 
-Every upload spends a page credit, so a page whose raw.json already exists
-is skipped instead of being run again.
+A page whose raw.json already exists is skipped, as for every service (and
+every upload spends a page credit); to run it again, clear the results
+(make clean-results SERVICE=handwriting_ocr).
 """
 
 import argparse
@@ -16,9 +17,9 @@ import time
 from pathlib import Path
 
 import httpx
-import pymupdf
 
 from comparison.config import configure_logging
+from comparison.util import render_page
 
 log = logging.getLogger("handwriting_ocr")
 
@@ -45,13 +46,6 @@ def request(
         wait = float(response.headers.get("Retry-After", 5))
         log.info(f"rate limited, waiting {wait:.0f} s")
         time.sleep(wait)
-
-
-def render_page(pdf: Path, page: int) -> bytes:
-    """Return one page (1-based) of a PDF as PNG bytes, as a reader sees it."""
-    with pymupdf.open(pdf) as doc:
-        # get_pixmap applies /Rotate, so the image matches the preprocessed page.
-        return doc[page - 1].get_pixmap(dpi=300).tobytes("png")
 
 
 def upload(client: httpx.Client, name: str, png: bytes, extractor: str) -> str:
@@ -102,7 +96,7 @@ def extract(lines: list[str]) -> None:
             stem = Path(key).stem
             output = RESULTS_DIR / f"{stem}.raw.json"
             if output.exists():
-                log.info(f"{key}: {output} exists, skipped (uploads spend credits)")
+                log.info(f"{key}: {output} exists, skipped")
                 continue
             png = render_page(Path("data/preprocessed") / key, int(page))
             jobs[output] = upload(client, f"{stem}_p{page}", png, extractor)

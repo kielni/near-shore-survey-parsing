@@ -27,7 +27,7 @@ from pathlib import Path
 
 from pydantic import BaseModel
 
-from comparison.config import configure_logging, mapped_paths
+from comparison.config import configure_logging, mapped_paths, results_dirs
 from comparison.schema import Cell, Flag, Row, SheetDocument
 
 log = logging.getLogger("score")
@@ -321,13 +321,9 @@ def scored_files() -> dict[str, int]:
         }
 
 
-def main() -> None:
-    """Parse arguments, score every scored sheet of a service, write results."""
-    configure_logging()
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--service", required=True, help="e.g. aws_textract")
-    args = parser.parse_args()
-    results_dir = Path("data/results", args.service)
+def score_results(results_dir: Path) -> None:
+    """Score every scored sheet in one results folder and write the results."""
+    label = str(results_dir.relative_to("data/results"))
     paths = mapped_paths(results_dir)
     allowed = scored_files()
     cells: list[ScoredCell] = []
@@ -353,7 +349,7 @@ def main() -> None:
             missed += sheet_missed
         scored += 1
     scores = {
-        "service": args.service,
+        "service": label,
         "sheets": scored,
     }
     scores.update(metrics(cells, missed))
@@ -377,9 +373,19 @@ def main() -> None:
             if not cell.correct:
                 writer.writerow(cell.model_dump() | {"rules": " ".join(cell.rules)})
     log.info(
-        f"{args.service}: {scored} sheets, {len(cells)} cells,"
+        f"{label}: {scored} sheets, {len(cells)} cells,"
         f" cell accuracy {scores['cell_accuracy']:.3f} -> {results_dir / 'scores.json'}"
     )
+
+
+def main() -> None:
+    """Parse arguments and score each of a service's results folders."""
+    configure_logging()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--service", required=True, help="e.g. aws_textract")
+    args = parser.parse_args()
+    for results_dir in results_dirs(args.service):
+        score_results(results_dir)
 
 
 if __name__ == "__main__":
