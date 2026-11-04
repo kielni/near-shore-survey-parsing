@@ -1,11 +1,12 @@
-"""Score one service's mapped sheets against the verified answers.
+"""Score one service's mapped sheets against the answers.
 
 Reads data/results/<service>/<file>.json and the matching
 data/answers/fronds/<file>.json, pairs extracted rows with answer plants
 (match_rows), and compares cell by cell. Writes, next to the results:
 
-- scores.json: cell and row accuracy, flag recall and rate, rare-case
-  accuracy, and validation-flag precision per rule;
+- scores.json: cell accuracy (overall, per field and per field group), row
+  accuracy, flag recall and rate, rare-case accuracy, and validation-flag
+  precision per rule;
 - errors.csv: every wrong cell, with how its row was paired.
 
 Scoring is per row: each extracted row is compared with the answer plant it
@@ -274,8 +275,10 @@ def metrics(cells: list[ScoredCell], missed: int) -> dict[str, object]:
     wrong = [c for c in cells if not c.correct]
     flagged = [c for c in cells if c.rules]
     by_field: dict[str, list[ScoredCell]] = {}
+    by_group: dict[str, list[ScoredCell]] = {}
     for cell in cells:
         by_field.setdefault(cell.field, []).append(cell)
+        by_group.setdefault(field_group(cell.field), []).append(cell)
     rows: dict[tuple[str, int | None, int | None, int | None], list[ScoredCell]] = {}
     for cell in cells:
         if cell.match != "header":
@@ -286,6 +289,7 @@ def metrics(cells: list[ScoredCell], missed: int) -> dict[str, object]:
         "cells": len(cells),
         "cell_accuracy": accuracy(cells),
         "cell_accuracy_by_field": {f: accuracy(c) for f, c in sorted(by_field.items())},
+        "cell_accuracy_by_group": {g: accuracy(c) for g, c in sorted(by_group.items())},
         "rows": len(rows),
         "row_accuracy": (
             sum(all(c.correct for c in r) for r in rows.values()) / len(rows)
@@ -378,8 +382,19 @@ def score_results(results_dir: Path) -> None:
     )
 
 
+def field_group(field: str) -> str:
+    """Return the group a scored field is reported under (F1-F12 as F_length)."""
+    if field.startswith("F") and field[1:].isdigit():
+        return "F_length"
+    if field.endswith("_broken"):
+        return "F_broken"
+    if field.startswith("tags."):
+        return "tags"
+    return field
+
+
 def main() -> None:
-    """Parse arguments and score each of a service's results folders."""
+    """Parse arguments and score a service's results folders."""
     configure_logging()
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--service", required=True, help="e.g. aws_textract")

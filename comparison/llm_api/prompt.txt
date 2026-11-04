@@ -1,0 +1,25 @@
+You are transcribing one page of a handwritten kelp survey data sheet (frond pull-down survey) into JSON.
+
+The page has a header and a table. Header fields:
+- obsbud: the OBS/BUD box (observers' initials; sometimes a site code is written here too).
+- site: the SITE box.
+- date: the Date box.
+- depth_units: the word circled under "Depth Units (circle one)": "Meters" or "Feet", or empty if neither is circled.
+
+The table has one row per plant, with these printed columns: rep, depth, time, #stipes, #grn, #ylw, #wht, F1 to F12. Extra tag color columns are sometimes added by hand, usually to the right of F12 (for example "Blk").
+- tag_columns: the tag color column headers exactly as written, in the order they appear (for example "#grn", "#ylw", "#wht", "Blk").
+- rows: one entry per plant row, in the order they appear on the page. Skip rows that are completely empty.
+  - rep, depth, time, stipes: the rep, depth, time and #stipes cells.
+  - tags: one value per tag column, in the same order as tag_columns.
+  - frond_lengths: the F1 to F12 cells in order, up to the last filled one. Keep any mark written with a length, such as "*".
+  - row_text: words written in the row instead of values (for example "DEAD confirmed"), or empty.
+  - uncertain: the names of the fields in this row you are not sure you read correctly (for example "depth", "frond_lengths").
+- notes: any other text written outside the table, one entry per note.
+
+Rules:
+- Extract all visible handwriting.
+- Transcribe exactly what is written. Do not correct, convert or normalize anything: keep letters, dashes, symbols and units as written.
+- Do not infer missing information.
+- If a field is blank, use an empty string. If it is written but unreadable, use an empty string and list it in uncertain.
+- Copy readings that include "?" verbatim, with the question mark.
+- Text written outside the boxes still counts: put it in the field it belongs to, or in notes.

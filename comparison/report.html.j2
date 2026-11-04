@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kelp frond sheets: OCR comparison</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<style>
+  .crop { max-width: 100%; }
+  .crop-cell { display: block; height: 3rem; width: auto; max-width: none; }
+  td.mismatch { background: #fff3cd; }
+  td.wrong { background: #f8d7da; }
+  td.editable { cursor: pointer; }
+  td.editable:hover { background: #ffe69c; }
+  td.editable.edited { background: #d1e7dd; }
+  td.editable:focus { cursor: text; outline: 2px solid #0d6efd; outline-offset: -2px; }
+</style>
+</head>
+<body>
+<main class="container py-4">
+
+<h1>Kelp frond sheets: OCR comparison</h1>
+<div class="text-body-secondary mb-3">Generated {{ generated }} from commit <code>{{ commit }}</code>. The commands at the end reproduce it.</div>
+
+<h2 class="mt-5" id="services">The services</h2>
+<div class="mb-3">This comparison tests automated parsing of frond pull-down sheets. It tried five services:</div>
+<dl>
+{% for s in service_list %}
+  <dt><a href="{{ s.url }}">{{ s.name }}</a></dt>
+  <dd>{{ s.description }}</dd>
+{% endfor %}
+</dl>
+
+<h2 class="mt-5" id="method">What this compares, and how</h2>
+<div class="mb-3">This comparison checks each service's reading of the scanned sheets against the lab's first data entry, <code>productivity_survey_FIRST_ENTRY - fronds_pull_down_long.tsv</code> (renamed to <code>data/fronds_answers.tsv</code> in the code). A mismatch marks a cell someone would check during reconciliation.</div>
+<div class="mb-3">Two cells match if their values agree after normalizing (<code>7</code> and <code>7.0</code> match, and times compare as HH:MM), so formatting differences don't count. The comparison pairs plants by rep, then by agreeing values. It skips cells blank in both, and doesn't compare observers.</div>
+<div class="mb-3">22 sheets of form version 1.8 have a human entry. GPT-6 Sol, Textract and Form Parser read all 22; GPT-6 Astra read 5 of them, and Handwriting OCR read page 1 of those 5.</div>
+
+<h2 class="mt-5" id="results">Results by service</h2>
+<div class="table-responsive">
+<table class="table table-sm table-striped align-middle">
+<thead><tr>
+  <th>Service</th><th class="text-end">Sheets</th><th class="text-end">Pages</th><th class="text-end">Cells</th><th class="text-end">Matching</th><th class="text-end">Rows matching</th><th class="text-end">Mismatches per sheet</th><th class="text-end">Missed plants</th><th class="text-end">Per page</th>
+</tr></thead>
+<tbody>
+{% for s in services %}
+<tr>
+  <td>{{ s.name }}</td>
+  <td class="text-end">{{ s.sheets }}</td>
+  <td class="text-end">{{ s.pages }}</td>
+  <td class="text-end">{{ "{:,}".format(s.cells) }}</td>
+  <td class="text-end">{{ "%.1f"|format(s.accuracy * 100) }}%</td>
+  <td class="text-end">{{ s.rows_matching }} of {{ s.rows }}</td>
+  <td class="text-end">{{ "%.0f"|format(s.mismatches_per_sheet) }}</td>
+  <td class="text-end">{{ s.missed }}</td>
+  <td class="text-end" title="{{ s.price_source }}">${{ "%.3f"|format(s.price) }}</td>
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+<div class="small text-body-secondary mb-3"><b>Sheet</b>: one survey's scan (one date and site); <b>pages</b> counts its paper sheets, as a survey can fill several. <br>
+<b>Matching</b>: the share of compared cells that agree with the human entry. Br>
+<b>Mismatches per sheet</b>: the cells someone would check for each sheet, the reconciliation workload.<br>
+<b>Missed plants</b>: plants in the human entry with no row read (counted only where the service read every page). Hover over a price to see its source.</div>
+<div></div>
+<b>Google Document AI (Form Parser) isn't feasible.</b> It merges several columns' values into one table cell with no separator (<code>68.71225/6</code> holds rep 6, depth 8.7, time 1225 and 16 stipes), merges plants into fewer rows (5 or 6 rows for 8 plants on many sheets), gives no confidence for table cells, and pairs form labels with the wrong values. The comparison can't pair most of its plants, so its matching figure covers only the few rows it could pair.
+</div>
+
+<h2 class="mt-5" id="by-field">Matching by field</h2>
+<div class="mb-3">Each service on all the sheets it read; the figures for GPT-6 Astra and Handwriting OCR come from a sample 5 sheets because they are much more expensive.</div>
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+<thead><tr><th>Service</th>{% for name in field_names %}<th class="text-end">{{ name }}</th>{% endfor %}</tr></thead>
+<tbody>
+{% for f in fields %}
+<tr>
+  <td>{{ f.name }}</td>
+  {% for value in f.groups %}<td class="text-end">{% if value is not none %}{{ "%.0f"|format(value * 100) }}%{% endif %}</td>{% endfor %}
+</tr>
+{% endfor %}
+</tbody>
+</table>
+</div>
+
+<h2 class="mt-5" id="end-to-end">Output</h2>
+
+<div class="mb-3">The pipeline writes each service's reading directly to a Google Sheet. It writes data using the lab's existing data-entry layout (<code>productivity_survey_FIRST_ENTRY - fronds_pull_down_long.tsv</code>), one row per frond. Light yellow marks each cell the service read with low confidence (below {{ "%.0f"|format(low_confidence * 100) }}%). Handwriting OCR does not report confidence scores.</div>
+
+<div>
+
+  <img src="img/sheet_preview.png" class="img-fluid border">
+
+</div>
+
+<h2 class="mt-5" id="end-to-end">One sheet, end to end</h2>
+
+
+<div class="mb-3"><code>{{ overview.file }}</code>: what reconciliation could look like with OCR as the second entry.</div>
+<img class="img-fluid border mb-3" src="img/sheet_annotated.jpg" alt="{{ overview.file }}, page 1">
+
+<div class="mb-3">Jump to:
+{% for s in overview.services %}
+  <a href="#end-to-end-{{ s.id }}">{{ s.name }}</a>{% if not loop.last %} ·{% endif %}
+{% endfor %}
+</div>
+
+<div class="alert alert-info">
+<b>Sample reconciliation workflow:</b> click a highlighted disagreement to correct it; this demo doesn't save the corrections.
+</div>
+{% for s in overview.services %}
+{% if not loop.first %}<hr class="my-4">{% endif %}
+<section class="mb-4" id="end-to-end-{{ s.id }}">
+  <h3 class="h5">{{ s.name }}</h3>
+  <div class="mb-3"><b>{{ s.matching }} of {{ s.plants }}</b> rows match in every cell.</div>
+  {% for row in s.rows %}
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th>{% for c in row.columns %}<th>{{ c.name }}</th>{% endfor %}</tr></thead>
+      <tbody>
+        {% if row.cropped %}<tr><th></th>{% for c in row.columns %}<td class="p-0 align-middle">{% if c.crop %}<img class="crop-cell" src="{{ c.crop }}" alt="rep {{ row.rep }}, {{ c.name }}, from the scan">{% endif %}</td>{% endfor %}</tr>{% endif %}
+        <tr><th>human</th>{% for c in row.columns %}{% if c.on_sheet %}<td class="wrong" title="The sheet says {{ c.on_sheet }}">{{ c.human }}</td>{% else %}<td>{{ c.human }}</td>{% endif %}{% endfor %}</tr>
+        <tr><th>{{ s.name }}{% if row.how %} <span class="badge text-bg-warning">{{ row.how }}</span>{% endif %}</th>{% for c in row.columns %}{% if c.match %}<td>{{ c.service }}</td>{% else %}<td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">{{ c.service }}</td>{% endif %}{% endfor %}</tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  {% endfor %}
+</section>
+{% endfor %}
+
+<h2 class="mt-5" id="problems">Common problems</h2>
+<div class="mb-3">Each example below comes from a real sheet, with what each service read and a possible change to the form or the data entry, for the lab to confirm.</div>
+{% for p in problems %}
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">{{ p.title }}</h3>
+    <div class="mb-2"><code>{{ p.file }}</code>, page {{ p.page }}. {{ p.text }}</div>
+    {% if p.crop %}<img class="crop border mb-2" src="{{ p.crop }}" alt="{{ p.title }}">{% endif %}
+    {% if p.readings %}
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      {% for r in p.readings %}
+      <tr>
+        <th>{{ r.name }}</th>
+        {% if r.missed %}<td class="mismatch">plant not read</td>{% endif %}
+        {% for c in r.columns %}<td class="{% if not c.match %}mismatch{% endif %}"><span class="text-body-secondary small">{{ c.name }}</span> {{ c.service }}{% if c.human is defined and not c.match %} <span class="text-body-secondary small">(human {{ c.human }})</span>{% endif %}</td>{% endfor %}
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% endif %}
+    <div><b>Possible change:</b> {{ p.change }}</div>
+  </div>
+</div>
+{% endfor %}
+<div class="card mb-4"><div class="card-body">
+  <h3 class="h5">The oversized scan</h3>
+  <div>The scanner stored <code>20261016_SQPT02_FrondPull_1.8.pdf</code> at about three times the usual page size (about 33 × 25 inches), so at 300 dpi its page comes to 9,834 × 7,575 pixels, over OpenAI's image limit. The pipeline now scales every page to the same size before sending it to the LLM. <b>Possible change:</b> a fixed page size in the scanner settings.</div>
+</div></div>
+
+<h2 class="mt-5" id="maintenance">Maintenance, per service</h2>
+<div class="mb-3">What a lab member would have to do to keep each service working.</div>
+<dl>
+  <dt>GPT-6 Sol / Astra (OpenAI)</dt>
+  <dd>When OpenAI retires a model, replace its ID in <code>MODELS</code> (<code>comparison/llm_api/config.py</code>), then rerun and rescore to check that the new model reads as well; prices and behavior can change between models. Keep the API key in <code>local.env</code>, and billing on the OpenAI account.</dd>
+  <dt>Handwriting OCR</dt>
+  <dd>The custom extractor lives only in the vendor's dashboard. The API can list extractors but can't read, create or export their fields, so keep a written copy of the extractor's definition in the repo, to rebuild it if it's lost. Each new tag color needs a new field in the dashboard. Buy page credits by hand, in blocks of 100 that last a year; the API shows the balance, but buying credits through it needs a subscription. Keep the API key in <code>local.env</code>.</dd>
+  <dt>AWS Textract</dt>
+  <dd>Textract's API is stable, but this project has the most mapping code for it (<code>comparison/aws_textract/map.py</code>): reading the header from label lines, finding the hand-added tag column outside the table, ignoring tick marks beside reps. A change to the form will likely need a change there. Keep AWS credentials and the S3 bucket.</dd>
+  <dt>Google Document AI (Form Parser)</dt>
+  <dd>Not recommended (see results by service). To keep it: the processor in the Google Cloud console, and the service account key.</dd>
+  <dt>Every service</dt>
+  <dd>Update the shared conventions in <code>comparison/grid.py</code> and the known site codes (<code>KNOWN_SITES</code>, <code>comparison/config.py</code>) when the form or the data entry changes. <code>KNOWN_SITES</code> lives in the repo for now, so a new site means a code change; reading it from a Google Sheet instead would let lab members add sites without touching code.</dd>
+</dl>
+
+<h2 class="mt-5" id="reproduce">How to reproduce</h2>
+<pre class="bg-body-tertiary p-3"><code>make prep                                   # rotate the scans, upload the preprocessed PDFs
+make answers                                # parse the human entry
+make extract SERVICE=&lt;service&gt; FILES=data/fronds_sample.txt     # and FILES=data/fronds_remaining.txt
+make map SERVICE=&lt;service&gt;
+make validate SERVICE=&lt;service&gt;
+make score SERVICE=&lt;service&gt;
+make report                                 # this page</code></pre>
+<div class="mb-3">Services: <code>aws_textract</code>, <code>google_document_ai</code>, <code>handwriting_ocr</code>, <code>llm_api</code> (every model in <code>MODELS</code>). Handwriting OCR takes <code>FILES=data/fronds_handwriting_ocr.txt</code>. <code>make extract</code> skips files it already has results for; <code>make clean-results SERVICE=&lt;service&gt;</code> clears them to run again.</div>
+
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Mark a corrected value once someone edits it.
+  for (const cell of document.querySelectorAll("td.editable")) {
+    cell.addEventListener("input", () => cell.classList.add("edited"));
+  }
+</script>
+</body>
+</html>

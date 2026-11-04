@@ -2,7 +2,7 @@
 export
 
 
-.PHONY: lint prep extract map validate answers score clean-results
+.PHONY: lint prep extract map validate answers score clean-results report sheet
 
 lint:
 	uv run ruff check --fix .
@@ -54,3 +54,12 @@ clean-results:
 	@test -n "$(SERVICE)" || { echo "usage: make clean-results SERVICE=<service>"; exit 1; }
 	@case "$(SERVICE)" in *..*) echo "SERVICE must not contain .."; exit 1;; esac
 	rm -rf data/results/$(SERVICE)
+
+# Gather the saved results into comparison/report/ (calls no service).
+report:
+	uv run python -m comparison.report
+
+# Write every service's results to the demo Google Sheet (GOOGLE_SHEET_ID),
+# one tab per service, in the human entry's layout.
+sheet:
+	uv run python -m comparison.sheet

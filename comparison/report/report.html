@@ -1,0 +1,1028 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kelp frond sheets: OCR comparison</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<style>
+  .crop { max-width: 100%; }
+  .crop-cell { display: block; height: 3rem; width: auto; max-width: none; }
+  td.mismatch { background: #fff3cd; }
+  td.wrong { background: #f8d7da; }
+  td.editable { cursor: pointer; }
+  td.editable:hover { background: #ffe69c; }
+  td.editable.edited { background: #d1e7dd; }
+  td.editable:focus { cursor: text; outline: 2px solid #0d6efd; outline-offset: -2px; }
+</style>
+</head>
+<body>
+<main class="container py-4">
+
+<h1>Kelp frond sheets: OCR comparison</h1>
+<div class="text-body-secondary mb-3">Generated 2026-11-04 from commit <code>4c4fbee</code>. The commands at the end reproduce it.</div>
+
+<h2 class="mt-5" id="services">The services</h2>
+<div class="mb-3">This comparison tests automated parsing of frond pull-down sheets. It tried five services:</div>
+<dl>
+
+  <dt><a href="https://platform.openai.com/docs/models">GPT-6 Sol (OpenAI)</a></dt>
+  <dd>OpenAI&#39;s lower-cost language model. It reads each page image and returns every field as written; this project&#39;s code applies the sheet&#39;s conventions.</dd>
+
+  <dt><a href="https://platform.openai.com/docs/models">GPT-6 Astra (OpenAI)</a></dt>
+  <dd>OpenAI&#39;s larger model, with the same instructions as Sol; it costs about 7 times as much. It read the 5 sample sheets only.</dd>
+
+  <dt><a href="https://www.handwritingocr.com/">Handwriting OCR</a></dt>
+  <dd>A handwriting transcription service. A custom extractor, set up in its dashboard, returns the sheet&#39;s fields. It read page 1 of the 5 sample sheets (its free trial).</dd>
+
+  <dt><a href="https://aws.amazon.com/textract/">AWS Textract</a></dt>
+  <dd>Amazon&#39;s document OCR. It finds tables and form fields and returns text with positions and confidence; this project&#39;s code turns its table into the sheet&#39;s fields.</dd>
+
+  <dt><a href="https://cloud.google.com/document-ai">Google Document AI (Form Parser)</a></dt>
+  <dd>Google&#39;s ready-made processor for tables and form fields.</dd>
+
+</dl>
+
+<h2 class="mt-5" id="method">What this compares, and how</h2>
+<div class="mb-3">This comparison checks each service's reading of the scanned sheets against the lab's first data entry, <code>productivity_survey_FIRST_ENTRY - fronds_pull_down_long.tsv</code> (renamed to <code>data/fronds_answers.tsv</code> in the code). A mismatch marks a cell someone would check during reconciliation.</div>
+<div class="mb-3">Two cells match if their values agree after normalizing (<code>7</code> and <code>7.0</code> match, and times compare as HH:MM), so formatting differences don't count. The comparison pairs plants by rep, then by agreeing values. It skips cells blank in both, and doesn't compare observers.</div>
+<div class="mb-3">22 sheets of form version 1.8 have a human entry. GPT-6 Sol, Textract and Form Parser read all 22; GPT-6 Astra read 5 of them, and Handwriting OCR read page 1 of those 5.</div>
+
+<h2 class="mt-5" id="results">Results by service</h2>
+<div class="table-responsive">
+<table class="table table-sm table-striped align-middle">
+<thead><tr>
+  <th>Service</th><th class="text-end">Sheets</th><th class="text-end">Pages</th><th class="text-end">Cells</th><th class="text-end">Matching</th><th class="text-end">Rows matching</th><th class="text-end">Mismatches per sheet</th><th class="text-end">Missed plants</th><th class="text-end">Per page</th>
+</tr></thead>
+<tbody>
+
+<tr>
+  <td>GPT-6 Sol (OpenAI)</td>
+  <td class="text-end">22</td>
+  <td class="text-end">36</td>
+  <td class="text-end">4,321</td>
+  <td class="text-end">89.7%</td>
+  <td class="text-end">31 of 173</td>
+  <td class="text-end">20</td>
+  <td class="text-end">2</td>
+  <td class="text-end" title="actual, from tokens used on the sample sheets">$0.050</td>
+</tr>
+
+<tr>
+  <td>GPT-6 Astra (OpenAI)</td>
+  <td class="text-end">5</td>
+  <td class="text-end">8</td>
+  <td class="text-end">1,107</td>
+  <td class="text-end">93.9%</td>
+  <td class="text-end">15 of 39</td>
+  <td class="text-end">14</td>
+  <td class="text-end">1</td>
+  <td class="text-end" title="actual, from tokens used on the sample sheets">$0.340</td>
+</tr>
+
+<tr>
+  <td>Handwriting OCR</td>
+  <td class="text-end">5</td>
+  <td class="text-end">5</td>
+  <td class="text-end">1,041</td>
+  <td class="text-end">92.9%</td>
+  <td class="text-end">11 of 37</td>
+  <td class="text-end">15</td>
+  <td class="text-end">0</td>
+  <td class="text-end" title="$15 per 100 pages, pay as you go">$0.150</td>
+</tr>
+
+<tr>
+  <td>AWS Textract</td>
+  <td class="text-end">22</td>
+  <td class="text-end">36</td>
+  <td class="text-end">4,330</td>
+  <td class="text-end">74.0%</td>
+  <td class="text-end">1 of 182</td>
+  <td class="text-end">51</td>
+  <td class="text-end">4</td>
+  <td class="text-end" title="Tables + Forms, $0.015 + $0.05 per page">$0.065</td>
+</tr>
+
+<tr>
+  <td>Google Document AI (Form Parser)</td>
+  <td class="text-end">22</td>
+  <td class="text-end">36</td>
+  <td class="text-end">1,853</td>
+  <td class="text-end">13.1%</td>
+  <td class="text-end">0 of 152</td>
+  <td class="text-end">73</td>
+  <td class="text-end">135</td>
+  <td class="text-end" title="Form Parser, $30 per 1,000 pages">$0.030</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+<div class="small text-body-secondary mb-3"><b>Sheet</b>: one survey's scan (one date and site); <b>pages</b> counts its paper sheets, as a survey can fill several. <br>
+<b>Matching</b>: the share of compared cells that agree with the human entry. Br>
+<b>Mismatches per sheet</b>: the cells someone would check for each sheet, the reconciliation workload.<br>
+<b>Missed plants</b>: plants in the human entry with no row read (counted only where the service read every page). Hover over a price to see its source.</div>
+<div></div>
+<b>Google Document AI (Form Parser) isn't feasible.</b> It merges several columns' values into one table cell with no separator (<code>68.71225/6</code> holds rep 6, depth 8.7, time 1225 and 16 stipes), merges plants into fewer rows (5 or 6 rows for 8 plants on many sheets), gives no confidence for table cells, and pairs form labels with the wrong values. The comparison can't pair most of its plants, so its matching figure covers only the few rows it could pair.
+</div>
+
+<h2 class="mt-5" id="by-field">Matching by field</h2>
+<div class="mb-3">Each service on all the sheets it read; the figures for GPT-6 Astra and Handwriting OCR come from a sample 5 sheets because they are much more expensive.</div>
+<div class="table-responsive">
+<table class="table table-sm table-striped">
+<thead><tr><th>Service</th><th class="text-end">frond lengths</th><th class="text-end">broken stipe (*)</th><th class="text-end">depth</th><th class="text-end">depth unit</th><th class="text-end">time</th><th class="text-end">rep</th><th class="text-end">tag counts</th><th class="text-end">#stipes</th></tr></thead>
+<tbody>
+
+<tr>
+  <td>GPT-6 Sol (OpenAI)</td>
+  <td class="text-end">90%</td><td class="text-end">97%</td><td class="text-end">84%</td><td class="text-end">87%</td><td class="text-end">74%</td><td class="text-end">95%</td><td class="text-end">72%</td><td class="text-end">97%</td>
+</tr>
+
+<tr>
+  <td>GPT-6 Astra (OpenAI)</td>
+  <td class="text-end">93%</td><td class="text-end">97%</td><td class="text-end">90%</td><td class="text-end">74%</td><td class="text-end">85%</td><td class="text-end">100%</td><td class="text-end">95%</td><td class="text-end">100%</td>
+</tr>
+
+<tr>
+  <td>Handwriting OCR</td>
+  <td class="text-end">91%</td><td class="text-end">96%</td><td class="text-end">89%</td><td class="text-end">73%</td><td class="text-end">84%</td><td class="text-end">100%</td><td class="text-end">94%</td><td class="text-end">100%</td>
+</tr>
+
+<tr>
+  <td>AWS Textract</td>
+  <td class="text-end">82%</td><td class="text-end">78%</td><td class="text-end">68%</td><td class="text-end">4%</td><td class="text-end">59%</td><td class="text-end">89%</td><td class="text-end">57%</td><td class="text-end">81%</td>
+</tr>
+
+<tr>
+  <td>Google Document AI (Form Parser)</td>
+  <td class="text-end">6%</td><td class="text-end">13%</td><td class="text-end">5%</td><td class="text-end">0%</td><td class="text-end">2%</td><td class="text-end">52%</td><td class="text-end">5%</td><td class="text-end">0%</td>
+</tr>
+
+</tbody>
+</table>
+</div>
+
+<h2 class="mt-5" id="end-to-end">Output</h2>
+
+<div class="mb-3">The pipeline writes each service's reading directly to a Google Sheet. It writes data using the lab's existing data-entry layout (<code>productivity_survey_FIRST_ENTRY - fronds_pull_down_long.tsv</code>), one row per frond. Light yellow marks each cell the service read with low confidence (below 80%). Handwriting OCR does not report confidence scores.</div>
+
+<div>
+
+  <img src="img/sheet_preview.png" class="img-fluid border">
+
+</div>
+
+<h2 class="mt-5" id="end-to-end">One sheet, end to end</h2>
+
+
+<div class="mb-3"><code>20261016_SQPT01_FrondPull_1.8.pdf</code>: what reconciliation could look like with OCR as the second entry.</div>
+<img class="img-fluid border mb-3" src="img/sheet_annotated.jpg" alt="20261016_SQPT01_FrondPull_1.8.pdf, page 1">
+
+<div class="mb-3">Jump to:
+
+  <a href="#end-to-end-llm_api-gpt-6-sol">GPT-6 Sol (OpenAI)</a> ·
+
+  <a href="#end-to-end-llm_api-gpt-6-astra">GPT-6 Astra (OpenAI)</a> ·
+
+  <a href="#end-to-end-handwriting_ocr">Handwriting OCR</a> ·
+
+  <a href="#end-to-end-aws_textract">AWS Textract</a> ·
+
+  <a href="#end-to-end-google_document_ai">Google Document AI (Form Parser)</a>
+
+</div>
+
+<div class="alert alert-info">
+<b>Sample reconciliation workflow:</b> click a highlighted disagreement to correct it; this demo doesn't save the corrections.
+</div>
+
+
+<section class="mb-4" id="end-to-end-llm_api-gpt-6-sol">
+  <h3 class="h5">GPT-6 Sol (OpenAI)</h3>
+  <div class="mb-3"><b>1 of 8</b> rows match in every cell.</div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-rep.png" alt="rep 1, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-depth.png" alt="rep 1, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-time.png" alt="rep 1, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-stipes.png" alt="rep 1, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-grn.png" alt="rep 1, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-ylw.png" alt="rep 1, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-wht.png" alt="rep 1, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f1.png" alt="rep 1, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f2.png" alt="rep 1, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f3.png" alt="rep 1, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f4.png" alt="rep 1, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f5.png" alt="rep 1, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f6.png" alt="rep 1, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f7.png" alt="rep 1, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f8.png" alt="rep 1, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f9.png" alt="rep 1, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f10.png" alt="rep 1, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f11.png" alt="rep 1, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f12.png" alt="rep 1, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="wrong" title="The sheet says 11.7">1.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+        <tr><th>GPT-6 Sol (OpenAI)</th><td>1</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">8.4</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-rep.png" alt="rep 2, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-depth.png" alt="rep 2, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-time.png" alt="rep 2, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-stipes.png" alt="rep 2, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-grn.png" alt="rep 2, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-ylw.png" alt="rep 2, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-wht.png" alt="rep 2, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f1.png" alt="rep 2, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f2.png" alt="rep 2, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f3.png" alt="rep 2, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f4.png" alt="rep 2, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f5.png" alt="rep 2, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f6.png" alt="rep 2, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f7.png" alt="rep 2, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f8.png" alt="rep 2, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f9.png" alt="rep 2, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f10.png" alt="rep 2, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f11.png" alt="rep 2, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f12.png" alt="rep 2, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>2</td><td>29.5</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td>16</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td>13.2</td><td>10*</td><td>14</td><td>9.8*</td><td>11.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+        <tr><th>GPT-6 Sol (OpenAI)</th><td>2</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">29</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">18</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td>13.2</td><td>10*</td><td>14</td><td>9.8*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-rep.png" alt="rep 8, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-depth.png" alt="rep 8, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-time.png" alt="rep 8, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-stipes.png" alt="rep 8, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-grn.png" alt="rep 8, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-ylw.png" alt="rep 8, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-wht.png" alt="rep 8, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f1.png" alt="rep 8, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f2.png" alt="rep 8, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f3.png" alt="rep 8, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f4.png" alt="rep 8, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f5.png" alt="rep 8, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f6.png" alt="rep 8, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f7.png" alt="rep 8, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f8.png" alt="rep 8, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f9.png" alt="rep 8, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f10.png" alt="rep 8, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f11.png" alt="rep 8, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f12.png" alt="rep 8, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>8</td><td>29</td><td>10:34</td><td>32</td><td>0</td><td>0</td><td>27</td><td>11.3</td><td>12.5</td><td>5</td><td>2.4</td><td>9.1</td><td>1.3</td><td>12.3*</td><td>16</td><td>12.1</td><td>1.3*</td><td>9.2</td><td>1</td><td>Feet</td><td>5</td></tr>
+        <tr><th>GPT-6 Sol (OpenAI)</th><td>8</td><td>29</td><td>10:34</td><td>32</td><td>0</td><td>0</td><td>27</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.3</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">2.5</td><td>5</td><td>2.4</td><td>9.1</td><td>1.3</td><td>12.3*</td><td>16</td><td>12.1</td><td>1.3*</td><td>9.2</td><td>1</td><td>Feet</td><td>5</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-rep.png" alt="rep 4, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-depth.png" alt="rep 4, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-time.png" alt="rep 4, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-stipes.png" alt="rep 4, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-grn.png" alt="rep 4, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-ylw.png" alt="rep 4, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-wht.png" alt="rep 4, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f1.png" alt="rep 4, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f2.png" alt="rep 4, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f3.png" alt="rep 4, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f4.png" alt="rep 4, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f5.png" alt="rep 4, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f6.png" alt="rep 4, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f7.png" alt="rep 4, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f8.png" alt="rep 4, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f9.png" alt="rep 4, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f10.png" alt="rep 4, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f11.png" alt="rep 4, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f12.png" alt="rep 4, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>4</td><td>8.6</td><td>11:00</td><td>22</td><td>0</td><td>0</td><td>18</td><td>0.6</td><td>2.4</td><td>2.7</td><td>16.5*</td><td>13.4</td><td>11.8*</td><td>8.8</td><td>9.5</td><td>7.7*</td><td>17.5</td><td>13.7*</td><td>14.3</td><td>Meters</td><td>4</td></tr>
+        <tr><th>GPT-6 Sol (OpenAI)</th><td>4</td><td>8.6</td><td>11:00</td><td>22</td><td>0</td><td>0</td><td>18</td><td>0.6</td><td>2.4</td><td>2.7</td><td>16.5*</td><td>13.4</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.8*</td><td>8.8</td><td>9.5</td><td>7.7*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">7.5</td><td>13.7*</td><td>14.3</td><td>Meters</td><td>4</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-rep.png" alt="rep 6, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-depth.png" alt="rep 6, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-time.png" alt="rep 6, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-stipes.png" alt="rep 6, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-grn.png" alt="rep 6, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-ylw.png" alt="rep 6, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-wht.png" alt="rep 6, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f1.png" alt="rep 6, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f2.png" alt="rep 6, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f3.png" alt="rep 6, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f4.png" alt="rep 6, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f5.png" alt="rep 6, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f6.png" alt="rep 6, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f7.png" alt="rep 6, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f8.png" alt="rep 6, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f9.png" alt="rep 6, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f10.png" alt="rep 6, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f11.png" alt="rep 6, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f12.png" alt="rep 6, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>6</td><td>8</td><td>11:13</td><td>8</td><td>0</td><td>0</td><td>6</td><td>6*</td><td>11.3</td><td>2</td><td>6.5</td><td>3.8</td><td>6*</td><td>10.5</td><td>6.7</td><td></td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+        <tr><th>GPT-6 Sol (OpenAI)</th><td>6</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">8.6</td><td>11:13</td><td>8</td><td>0</td><td>0</td><td>6</td><td>6*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.3</td><td>2</td><td>6.5</td><td>3.8</td><td>6*</td><td>10.5</td><td>6.7</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">8</td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-rep.png" alt="rep 3, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-depth.png" alt="rep 3, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-time.png" alt="rep 3, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-stipes.png" alt="rep 3, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-grn.png" alt="rep 3, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-ylw.png" alt="rep 3, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-wht.png" alt="rep 3, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f1.png" alt="rep 3, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f2.png" alt="rep 3, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f3.png" alt="rep 3, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f4.png" alt="rep 3, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f5.png" alt="rep 3, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f6.png" alt="rep 3, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f7.png" alt="rep 3, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f8.png" alt="rep 3, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f9.png" alt="rep 3, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f10.png" alt="rep 3, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f11.png" alt="rep 3, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f12.png" alt="rep 3, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>3</td><td>28</td><td>10:52</td><td>16</td><td>0</td><td>0</td><td>11</td><td>7.2*</td><td>12</td><td>0.1*</td><td>3.7</td><td>15</td><td>0.2</td><td>9.8</td><td>5.7</td><td>15.5</td><td>5.5</td><td>2.5*</td><td>2.5*</td><td>Feet</td><td>5</td></tr>
+        <tr><th>GPT-6 Sol (OpenAI)</th><td>3</td><td>28</td><td>10:52</td><td>16</td><td>0</td><td>0</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5</td><td>7.2*</td><td>12</td><td>0.1*</td><td>3.7</td><td>15</td><td>0.2</td><td>9.8</td><td>5.7</td><td>15.5</td><td>5.5</td><td>2.5*</td><td>2.5*</td><td>Feet</td><td>5</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-rep.png" alt="rep 7, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-depth.png" alt="rep 7, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-time.png" alt="rep 7, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-stipes.png" alt="rep 7, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-grn.png" alt="rep 7, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-ylw.png" alt="rep 7, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-wht.png" alt="rep 7, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f1.png" alt="rep 7, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f2.png" alt="rep 7, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f3.png" alt="rep 7, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f4.png" alt="rep 7, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f5.png" alt="rep 7, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f6.png" alt="rep 7, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f7.png" alt="rep 7, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f8.png" alt="rep 7, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f9.png" alt="rep 7, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f10.png" alt="rep 7, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f11.png" alt="rep 7, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f12.png" alt="rep 7, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>7</td><td>29</td><td>10:37</td><td>16</td><td>0</td><td>0</td><td>11</td><td>0.2</td><td>1.2</td><td>1</td><td>3</td><td>6.3</td><td>13*</td><td>11.6</td><td>10.5</td><td>15</td><td>11.3</td><td>10</td><td>8.3</td><td>Feet</td><td>5</td></tr>
+        <tr><th>GPT-6 Sol (OpenAI)</th><td>7</td><td>29</td><td>10:37</td><td>16</td><td>0</td><td>0</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5</td><td>0.2</td><td>1.2</td><td>1</td><td>3</td><td>6.3</td><td>13*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.6</td><td>10.5</td><td>15</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.3</td><td>10</td><td>8.3</td><td>Feet</td><td>5</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+</section>
+
+<hr class="my-4">
+<section class="mb-4" id="end-to-end-llm_api-gpt-6-astra">
+  <h3 class="h5">GPT-6 Astra (OpenAI)</h3>
+  <div class="mb-3"><b>6 of 8</b> rows match in every cell.</div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-rep.png" alt="rep 1, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-depth.png" alt="rep 1, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-time.png" alt="rep 1, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-stipes.png" alt="rep 1, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-grn.png" alt="rep 1, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-ylw.png" alt="rep 1, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-wht.png" alt="rep 1, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f1.png" alt="rep 1, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f2.png" alt="rep 1, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f3.png" alt="rep 1, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f4.png" alt="rep 1, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f5.png" alt="rep 1, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f6.png" alt="rep 1, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f7.png" alt="rep 1, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f8.png" alt="rep 1, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f9.png" alt="rep 1, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f10.png" alt="rep 1, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f11.png" alt="rep 1, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f12.png" alt="rep 1, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="wrong" title="The sheet says 11.7">1.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+        <tr><th>GPT-6 Astra (OpenAI)</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">11.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-rep.png" alt="rep 2, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-depth.png" alt="rep 2, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-time.png" alt="rep 2, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-stipes.png" alt="rep 2, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-grn.png" alt="rep 2, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-ylw.png" alt="rep 2, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-wht.png" alt="rep 2, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f1.png" alt="rep 2, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f2.png" alt="rep 2, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f3.png" alt="rep 2, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f4.png" alt="rep 2, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f5.png" alt="rep 2, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f6.png" alt="rep 2, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f7.png" alt="rep 2, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f8.png" alt="rep 2, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f9.png" alt="rep 2, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f10.png" alt="rep 2, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f11.png" alt="rep 2, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f12.png" alt="rep 2, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>2</td><td>29.5</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td>16</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td>13.2</td><td>10*</td><td>14</td><td>9.8*</td><td>11.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+        <tr><th>GPT-6 Astra (OpenAI)</th><td>2</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">29</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td>16</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td>13.2</td><td>10*</td><td>14</td><td>9.8*</td><td>11.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+</section>
+
+<hr class="my-4">
+<section class="mb-4" id="end-to-end-handwriting_ocr">
+  <h3 class="h5">Handwriting OCR</h3>
+  <div class="mb-3"><b>2 of 8</b> rows match in every cell.</div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-rep.png" alt="rep 1, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-depth.png" alt="rep 1, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-time.png" alt="rep 1, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-stipes.png" alt="rep 1, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-grn.png" alt="rep 1, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-ylw.png" alt="rep 1, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-wht.png" alt="rep 1, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f1.png" alt="rep 1, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f2.png" alt="rep 1, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f3.png" alt="rep 1, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f4.png" alt="rep 1, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f5.png" alt="rep 1, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f6.png" alt="rep 1, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f7.png" alt="rep 1, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f8.png" alt="rep 1, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f9.png" alt="rep 1, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f10.png" alt="rep 1, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f11.png" alt="rep 1, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f12.png" alt="rep 1, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="wrong" title="The sheet says 11.7">1.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+        <tr><th>Handwriting OCR</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">11.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-rep.png" alt="rep 2, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-depth.png" alt="rep 2, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-time.png" alt="rep 2, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-stipes.png" alt="rep 2, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-grn.png" alt="rep 2, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-ylw.png" alt="rep 2, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-wht.png" alt="rep 2, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f1.png" alt="rep 2, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f2.png" alt="rep 2, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f3.png" alt="rep 2, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f4.png" alt="rep 2, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f5.png" alt="rep 2, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f6.png" alt="rep 2, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f7.png" alt="rep 2, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f8.png" alt="rep 2, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f9.png" alt="rep 2, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f10.png" alt="rep 2, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f11.png" alt="rep 2, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f12.png" alt="rep 2, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>2</td><td>29.5</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td>16</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td>13.2</td><td>10*</td><td>14</td><td>9.8*</td><td>11.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+        <tr><th>Handwriting OCR</th><td>2</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">29</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td>16</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">3.2</td><td>10*</td><td>14</td><td>9.8*</td><td>11.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-rep.png" alt="rep 8, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-depth.png" alt="rep 8, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-time.png" alt="rep 8, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-stipes.png" alt="rep 8, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-grn.png" alt="rep 8, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-ylw.png" alt="rep 8, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-wht.png" alt="rep 8, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f1.png" alt="rep 8, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f2.png" alt="rep 8, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f3.png" alt="rep 8, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f4.png" alt="rep 8, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f5.png" alt="rep 8, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f6.png" alt="rep 8, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f7.png" alt="rep 8, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f8.png" alt="rep 8, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f9.png" alt="rep 8, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f10.png" alt="rep 8, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f11.png" alt="rep 8, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f12.png" alt="rep 8, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>8</td><td>29</td><td>10:34</td><td>32</td><td>0</td><td>0</td><td>27</td><td>11.3</td><td>12.5</td><td>5</td><td>2.4</td><td>9.1</td><td>1.3</td><td>12.3*</td><td>16</td><td>12.1</td><td>1.3*</td><td>9.2</td><td>1</td><td>Feet</td><td>5</td></tr>
+        <tr><th>Handwriting OCR</th><td>8</td><td>29</td><td>10:34</td><td>32</td><td>0</td><td>0</td><td>27</td><td>11.3</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">2.5</td><td>5</td><td>2.4</td><td>9.1</td><td>1.3</td><td>12.3*</td><td>16</td><td>12.1</td><td>1.3*</td><td>9.2</td><td>1</td><td>Feet</td><td>5</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-rep.png" alt="rep 4, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-depth.png" alt="rep 4, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-time.png" alt="rep 4, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-stipes.png" alt="rep 4, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-grn.png" alt="rep 4, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-ylw.png" alt="rep 4, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-wht.png" alt="rep 4, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f1.png" alt="rep 4, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f2.png" alt="rep 4, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f3.png" alt="rep 4, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f4.png" alt="rep 4, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f5.png" alt="rep 4, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f6.png" alt="rep 4, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f7.png" alt="rep 4, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f8.png" alt="rep 4, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f9.png" alt="rep 4, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f10.png" alt="rep 4, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f11.png" alt="rep 4, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f12.png" alt="rep 4, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>4</td><td>8.6</td><td>11:00</td><td>22</td><td>0</td><td>0</td><td>18</td><td>0.6</td><td>2.4</td><td>2.7</td><td>16.5*</td><td>13.4</td><td>11.8*</td><td>8.8</td><td>9.5</td><td>7.7*</td><td>17.5</td><td>13.7*</td><td>14.3</td><td>Meters</td><td>4</td></tr>
+        <tr><th>Handwriting OCR</th><td>4</td><td>8.6</td><td>11:00</td><td>22</td><td>0</td><td>0</td><td>18</td><td>0.6</td><td>2.4</td><td>2.7</td><td>16.5*</td><td>13.4</td><td>11.8*</td><td>8.8</td><td>9.5</td><td>7.7*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">7.5</td><td>13.7*</td><td>14.3</td><td>Meters</td><td>4</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-rep.png" alt="rep 6, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-depth.png" alt="rep 6, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-time.png" alt="rep 6, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-stipes.png" alt="rep 6, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-grn.png" alt="rep 6, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-ylw.png" alt="rep 6, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-wht.png" alt="rep 6, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f1.png" alt="rep 6, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f2.png" alt="rep 6, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f3.png" alt="rep 6, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f4.png" alt="rep 6, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f5.png" alt="rep 6, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f6.png" alt="rep 6, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f7.png" alt="rep 6, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f8.png" alt="rep 6, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f9.png" alt="rep 6, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f10.png" alt="rep 6, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f11.png" alt="rep 6, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f12.png" alt="rep 6, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>6</td><td>8</td><td>11:13</td><td>8</td><td>0</td><td>0</td><td>6</td><td>6*</td><td>11.3</td><td>2</td><td>6.5</td><td>3.8</td><td>6*</td><td>10.5</td><td>6.7</td><td></td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+        <tr><th>Handwriting OCR</th><td>6</td><td>8</td><td>11:13</td><td>8</td><td>0</td><td>0</td><td>6</td><td>6*</td><td>11.3</td><td>2</td><td>6.5</td><td>3.8</td><td>6*</td><td>10.5</td><td>6.7</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">4</td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-rep.png" alt="rep 3, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-depth.png" alt="rep 3, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-time.png" alt="rep 3, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-stipes.png" alt="rep 3, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-grn.png" alt="rep 3, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-ylw.png" alt="rep 3, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-wht.png" alt="rep 3, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f1.png" alt="rep 3, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f2.png" alt="rep 3, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f3.png" alt="rep 3, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f4.png" alt="rep 3, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f5.png" alt="rep 3, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f6.png" alt="rep 3, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f7.png" alt="rep 3, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f8.png" alt="rep 3, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f9.png" alt="rep 3, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f10.png" alt="rep 3, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f11.png" alt="rep 3, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f12.png" alt="rep 3, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>3</td><td>28</td><td>10:52</td><td>16</td><td>0</td><td>0</td><td>11</td><td>7.2*</td><td>12</td><td>0.1*</td><td>3.7</td><td>15</td><td>0.2</td><td>9.8</td><td>5.7</td><td>15.5</td><td>5.5</td><td>2.5*</td><td>2.5*</td><td>Feet</td><td>5</td></tr>
+        <tr><th>Handwriting OCR</th><td>3</td><td>28</td><td>10:52</td><td>16</td><td>0</td><td>0</td><td>11</td><td>7.2*</td><td>12</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">0.7*</td><td>3.7</td><td>15</td><td>0.2</td><td>9.8</td><td>5.7</td><td>15.5</td><td>5.5</td><td>2.5*</td><td>2.5*</td><td>Feet</td><td>5</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+</section>
+
+<hr class="my-4">
+<section class="mb-4" id="end-to-end-aws_textract">
+  <h3 class="h5">AWS Textract</h3>
+  <div class="mb-3"><b>1 of 8</b> rows match in every cell.</div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-rep.png" alt="rep 1, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-depth.png" alt="rep 1, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-time.png" alt="rep 1, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-stipes.png" alt="rep 1, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-grn.png" alt="rep 1, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-ylw.png" alt="rep 1, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-wht.png" alt="rep 1, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f1.png" alt="rep 1, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f2.png" alt="rep 1, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f3.png" alt="rep 1, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f4.png" alt="rep 1, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f5.png" alt="rep 1, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f6.png" alt="rep 1, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f7.png" alt="rep 1, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f8.png" alt="rep 1, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f9.png" alt="rep 1, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f10.png" alt="rep 1, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f11.png" alt="rep 1, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f12.png" alt="rep 1, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="wrong" title="The sheet says 11.7">1.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+        <tr><th>AWS Textract</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">1</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">11.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td>1</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-rep.png" alt="rep 2, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-depth.png" alt="rep 2, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-time.png" alt="rep 2, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-stipes.png" alt="rep 2, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-grn.png" alt="rep 2, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-ylw.png" alt="rep 2, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-wht.png" alt="rep 2, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f1.png" alt="rep 2, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f2.png" alt="rep 2, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f3.png" alt="rep 2, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f4.png" alt="rep 2, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f5.png" alt="rep 2, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f6.png" alt="rep 2, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f7.png" alt="rep 2, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f8.png" alt="rep 2, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f9.png" alt="rep 2, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f10.png" alt="rep 2, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f11.png" alt="rep 2, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f12.png" alt="rep 2, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>2</td><td>29.5</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td>16</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td>13.2</td><td>10*</td><td>14</td><td>9.8*</td><td>11.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+        <tr><th>AWS Textract</th><td>2</td><td>29.5</td><td>10:45</td><td>19</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">1</td><td>0</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">18</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5.6</td><td>13.2</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">10</td><td>14</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">9.8</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">11.3</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">*</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td>3</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-rep.png" alt="rep 8, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-depth.png" alt="rep 8, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-time.png" alt="rep 8, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-stipes.png" alt="rep 8, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-grn.png" alt="rep 8, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-ylw.png" alt="rep 8, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-wht.png" alt="rep 8, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f1.png" alt="rep 8, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f2.png" alt="rep 8, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f3.png" alt="rep 8, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f4.png" alt="rep 8, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f5.png" alt="rep 8, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f6.png" alt="rep 8, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f7.png" alt="rep 8, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f8.png" alt="rep 8, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f9.png" alt="rep 8, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f10.png" alt="rep 8, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f11.png" alt="rep 8, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f12.png" alt="rep 8, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>8</td><td>29</td><td>10:34</td><td>32</td><td>0</td><td>0</td><td>27</td><td>11.3</td><td>12.5</td><td>5</td><td>2.4</td><td>9.1</td><td>1.3</td><td>12.3*</td><td>16</td><td>12.1</td><td>1.3*</td><td>9.2</td><td>1</td><td>Feet</td><td>5</td></tr>
+        <tr><th>AWS Textract</th><td>8</td><td>29</td><td>10:34</td><td>32</td><td>0</td><td>0</td><td>27</td><td>11.3</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">2.5</td><td>5</td><td>2.4</td><td>9.1</td><td>1.3</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">12.3</td><td>16</td><td>12.1</td><td>1.3*</td><td>9.2</td><td>1</td><td>Feet</td><td>5</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-rep.png" alt="rep 4, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-depth.png" alt="rep 4, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-time.png" alt="rep 4, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-stipes.png" alt="rep 4, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-grn.png" alt="rep 4, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-ylw.png" alt="rep 4, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-wht.png" alt="rep 4, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f1.png" alt="rep 4, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f2.png" alt="rep 4, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f3.png" alt="rep 4, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f4.png" alt="rep 4, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f5.png" alt="rep 4, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f6.png" alt="rep 4, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f7.png" alt="rep 4, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f8.png" alt="rep 4, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f9.png" alt="rep 4, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f10.png" alt="rep 4, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f11.png" alt="rep 4, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f12.png" alt="rep 4, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>4</td><td>8.6</td><td>11:00</td><td>22</td><td>0</td><td>0</td><td>18</td><td>0.6</td><td>2.4</td><td>2.7</td><td>16.5*</td><td>13.4</td><td>11.8*</td><td>8.8</td><td>9.5</td><td>7.7*</td><td>17.5</td><td>13.7*</td><td>14.3</td><td>Meters</td><td>4</td></tr>
+        <tr><th>AWS Textract</th><td>4</td><td>8.6</td><td>11:00</td><td>22</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td>0</td><td>18</td><td>0.6</td><td>2.4</td><td>2.7</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">16.5</td><td>13.4</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">11.8</td><td>8.8</td><td>9.5</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">7.7</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">7.5</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">13.7</td><td>14.3</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td>4</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-rep.png" alt="rep 5, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-depth.png" alt="rep 5, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-time.png" alt="rep 5, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-stipes.png" alt="rep 5, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-grn.png" alt="rep 5, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-ylw.png" alt="rep 5, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-wht.png" alt="rep 5, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f1.png" alt="rep 5, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f2.png" alt="rep 5, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f3.png" alt="rep 5, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f4.png" alt="rep 5, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f5.png" alt="rep 5, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f6.png" alt="rep 5, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f7.png" alt="rep 5, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f8.png" alt="rep 5, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f9.png" alt="rep 5, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f10.png" alt="rep 5, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f11.png" alt="rep 5, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f12.png" alt="rep 5, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>5</td><td>8</td><td>11:13</td><td>6</td><td>0</td><td>0</td><td>4</td><td>1.5</td><td>7</td><td>3</td><td>7</td><td>4*</td><td>6*</td><td></td><td></td><td></td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+        <tr><th>AWS Textract</th><td>5</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">80</td><td>11:13</td><td>6</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">1</td><td>0</td><td>4</td><td>1.5</td><td>7</td><td>3</td><td>7</td><td>4*</td><td>6*</td><td></td><td></td><td></td><td></td><td></td><td></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td>2</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-rep.png" alt="rep 6, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-depth.png" alt="rep 6, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-time.png" alt="rep 6, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-stipes.png" alt="rep 6, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-grn.png" alt="rep 6, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-ylw.png" alt="rep 6, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-wht.png" alt="rep 6, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f1.png" alt="rep 6, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f2.png" alt="rep 6, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f3.png" alt="rep 6, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f4.png" alt="rep 6, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f5.png" alt="rep 6, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f6.png" alt="rep 6, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f7.png" alt="rep 6, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f8.png" alt="rep 6, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f9.png" alt="rep 6, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f10.png" alt="rep 6, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f11.png" alt="rep 6, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f12.png" alt="rep 6, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>6</td><td>8</td><td>11:13</td><td>8</td><td>0</td><td>0</td><td>6</td><td>6*</td><td>11.3</td><td>2</td><td>6.5</td><td>3.8</td><td>6*</td><td>10.5</td><td>6.7</td><td></td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+        <tr><th>AWS Textract</th><td>6</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">8.1</td><td>11:13</td><td>8</td><td>0</td><td>0</td><td>6</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">6.7</td><td>11.3</td><td>2</td><td>6.5</td><td>3.8</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">6.8</td><td>10.5</td><td>6.7</td><td></td><td></td><td></td><td></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td>2</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-rep.png" alt="rep 3, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-depth.png" alt="rep 3, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-time.png" alt="rep 3, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-stipes.png" alt="rep 3, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-grn.png" alt="rep 3, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-ylw.png" alt="rep 3, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-wht.png" alt="rep 3, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f1.png" alt="rep 3, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f2.png" alt="rep 3, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f3.png" alt="rep 3, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f4.png" alt="rep 3, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f5.png" alt="rep 3, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f6.png" alt="rep 3, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f7.png" alt="rep 3, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f8.png" alt="rep 3, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f9.png" alt="rep 3, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f10.png" alt="rep 3, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f11.png" alt="rep 3, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f12.png" alt="rep 3, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>3</td><td>28</td><td>10:52</td><td>16</td><td>0</td><td>0</td><td>11</td><td>7.2*</td><td>12</td><td>0.1*</td><td>3.7</td><td>15</td><td>0.2</td><td>9.8</td><td>5.7</td><td>15.5</td><td>5.5</td><td>2.5*</td><td>2.5*</td><td>Feet</td><td>5</td></tr>
+        <tr><th>AWS Textract</th><td>3</td><td>28</td><td>10:52</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">6</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">1</td><td>0</td><td>11</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">7.2</td><td>12</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">0.7</td><td>3.7</td><td>15</td><td>0.2</td><td>9.8</td><td>5.7</td><td>15.5</td><td>5.5</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">25</td><td>2.5*</td><td>Feet</td><td>5</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+</section>
+
+<hr class="my-4">
+<section class="mb-4" id="end-to-end-google_document_ai">
+  <h3 class="h5">Google Document AI (Form Parser)</h3>
+  <div class="mb-3"><b>0 of 8</b> rows match in every cell.</div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th></tr></thead>
+      <tbody>
+        
+        <tr><th>human</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">extra</span></th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th></tr></thead>
+      <tbody>
+        
+        <tr><th>human</th><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">extra</span></th><td></td><td></td><td></td><td></td><td></td><td></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">5</td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false">2</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-rep.png" alt="rep 1, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-depth.png" alt="rep 1, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-time.png" alt="rep 1, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-stipes.png" alt="rep 1, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-grn.png" alt="rep 1, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-ylw.png" alt="rep 1, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-wht.png" alt="rep 1, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f1.png" alt="rep 1, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f2.png" alt="rep 1, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f3.png" alt="rep 1, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f4.png" alt="rep 1, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f5.png" alt="rep 1, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f6.png" alt="rep 1, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f7.png" alt="rep 1, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f8.png" alt="rep 1, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f9.png" alt="rep 1, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f10.png" alt="rep 1, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f11.png" alt="rep 1, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-1-f12.png" alt="rep 1, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>1</td><td>8.9</td><td>10:45</td><td>36</td><td>0</td><td>0</td><td>35</td><td>2</td><td>7.7</td><td>3.4</td><td class="wrong" title="The sheet says 11.7">1.7</td><td>12.5</td><td>12.7</td><td>0.7</td><td>8.9</td><td>7</td><td>8.8</td><td>8.4</td><td>13</td><td>Meters</td><td>1</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-rep.png" alt="rep 2, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-depth.png" alt="rep 2, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-time.png" alt="rep 2, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-stipes.png" alt="rep 2, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-grn.png" alt="rep 2, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-ylw.png" alt="rep 2, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-wht.png" alt="rep 2, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f1.png" alt="rep 2, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f2.png" alt="rep 2, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f3.png" alt="rep 2, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f4.png" alt="rep 2, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f5.png" alt="rep 2, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f6.png" alt="rep 2, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f7.png" alt="rep 2, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f8.png" alt="rep 2, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f9.png" alt="rep 2, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f10.png" alt="rep 2, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f11.png" alt="rep 2, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-2-f12.png" alt="rep 2, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>2</td><td>29.5</td><td>10:45</td><td>19</td><td>0</td><td>0</td><td>16</td><td>0.4</td><td>3.3</td><td>3.7</td><td>2.5*</td><td>5.6*</td><td>13.2</td><td>10*</td><td>14</td><td>9.8*</td><td>11.3*</td><td>6.4</td><td>4*</td><td>Feet</td><td>3</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-rep.png" alt="rep 8, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-depth.png" alt="rep 8, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-time.png" alt="rep 8, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-stipes.png" alt="rep 8, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-grn.png" alt="rep 8, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-ylw.png" alt="rep 8, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-wht.png" alt="rep 8, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f1.png" alt="rep 8, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f2.png" alt="rep 8, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f3.png" alt="rep 8, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f4.png" alt="rep 8, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f5.png" alt="rep 8, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f6.png" alt="rep 8, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f7.png" alt="rep 8, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f8.png" alt="rep 8, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f9.png" alt="rep 8, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f10.png" alt="rep 8, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f11.png" alt="rep 8, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-3-f12.png" alt="rep 8, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>8</td><td>29</td><td>10:34</td><td>32</td><td>0</td><td>0</td><td>27</td><td>11.3</td><td>12.5</td><td>5</td><td>2.4</td><td>9.1</td><td>1.3</td><td>12.3*</td><td>16</td><td>12.1</td><td>1.3*</td><td>9.2</td><td>1</td><td>Feet</td><td>5</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-rep.png" alt="rep 4, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-depth.png" alt="rep 4, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-time.png" alt="rep 4, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-stipes.png" alt="rep 4, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-grn.png" alt="rep 4, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-ylw.png" alt="rep 4, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-wht.png" alt="rep 4, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f1.png" alt="rep 4, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f2.png" alt="rep 4, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f3.png" alt="rep 4, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f4.png" alt="rep 4, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f5.png" alt="rep 4, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f6.png" alt="rep 4, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f7.png" alt="rep 4, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f8.png" alt="rep 4, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f9.png" alt="rep 4, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f10.png" alt="rep 4, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f11.png" alt="rep 4, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-4-f12.png" alt="rep 4, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>4</td><td>8.6</td><td>11:00</td><td>22</td><td>0</td><td>0</td><td>18</td><td>0.6</td><td>2.4</td><td>2.7</td><td>16.5*</td><td>13.4</td><td>11.8*</td><td>8.8</td><td>9.5</td><td>7.7*</td><td>17.5</td><td>13.7*</td><td>14.3</td><td>Meters</td><td>4</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-rep.png" alt="rep 5, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-depth.png" alt="rep 5, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-time.png" alt="rep 5, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-stipes.png" alt="rep 5, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-grn.png" alt="rep 5, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-ylw.png" alt="rep 5, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-wht.png" alt="rep 5, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f1.png" alt="rep 5, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f2.png" alt="rep 5, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f3.png" alt="rep 5, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f4.png" alt="rep 5, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f5.png" alt="rep 5, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f6.png" alt="rep 5, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f7.png" alt="rep 5, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f8.png" alt="rep 5, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f9.png" alt="rep 5, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f10.png" alt="rep 5, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f11.png" alt="rep 5, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-5-f12.png" alt="rep 5, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>5</td><td>8</td><td>11:13</td><td>6</td><td>0</td><td>0</td><td>4</td><td>1.5</td><td>7</td><td>3</td><td>7</td><td>4*</td><td>6*</td><td></td><td></td><td></td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td></td><td></td><td></td><td></td><td></td><td></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-rep.png" alt="rep 6, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-depth.png" alt="rep 6, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-time.png" alt="rep 6, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-stipes.png" alt="rep 6, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-grn.png" alt="rep 6, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-ylw.png" alt="rep 6, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-wht.png" alt="rep 6, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f1.png" alt="rep 6, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f2.png" alt="rep 6, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f3.png" alt="rep 6, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f4.png" alt="rep 6, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f5.png" alt="rep 6, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f6.png" alt="rep 6, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f7.png" alt="rep 6, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f8.png" alt="rep 6, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f9.png" alt="rep 6, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f10.png" alt="rep 6, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f11.png" alt="rep 6, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-6-f12.png" alt="rep 6, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>6</td><td>8</td><td>11:13</td><td>8</td><td>0</td><td>0</td><td>6</td><td>6*</td><td>11.3</td><td>2</td><td>6.5</td><td>3.8</td><td>6*</td><td>10.5</td><td>6.7</td><td></td><td></td><td></td><td></td><td>Meters</td><td>2</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td></td><td></td><td></td><td></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-rep.png" alt="rep 3, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-depth.png" alt="rep 3, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-time.png" alt="rep 3, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-stipes.png" alt="rep 3, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-grn.png" alt="rep 3, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-ylw.png" alt="rep 3, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-wht.png" alt="rep 3, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f1.png" alt="rep 3, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f2.png" alt="rep 3, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f3.png" alt="rep 3, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f4.png" alt="rep 3, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f5.png" alt="rep 3, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f6.png" alt="rep 3, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f7.png" alt="rep 3, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f8.png" alt="rep 3, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f9.png" alt="rep 3, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f10.png" alt="rep 3, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f11.png" alt="rep 3, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-7-f12.png" alt="rep 3, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>3</td><td>28</td><td>10:52</td><td>16</td><td>0</td><td>0</td><td>11</td><td>7.2*</td><td>12</td><td>0.1*</td><td>3.7</td><td>15</td><td>0.2</td><td>9.8</td><td>5.7</td><td>15.5</td><td>5.5</td><td>2.5*</td><td>2.5*</td><td>Feet</td><td>5</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+  <div class="card mb-3">
+    <div class="table-responsive">
+    <table class="table table-sm table-bordered mb-0">
+      <thead><tr><th></th><th>rep</th><th>depth</th><th>time</th><th>stipes</th><th>tags.grn</th><th>tags.ylw</th><th>tags.wht</th><th>F1</th><th>F2</th><th>F3</th><th>F4</th><th>F5</th><th>F6</th><th>F7</th><th>F8</th><th>F9</th><th>F10</th><th>F11</th><th>F12</th><th>depth_unit</th><th>tags.blk</th></tr></thead>
+      <tbody>
+        <tr><th></th><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-rep.png" alt="rep 7, rep, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-depth.png" alt="rep 7, depth, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-time.png" alt="rep 7, time, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-stipes.png" alt="rep 7, stipes, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-grn.png" alt="rep 7, tags.grn, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-ylw.png" alt="rep 7, tags.ylw, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-wht.png" alt="rep 7, tags.wht, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f1.png" alt="rep 7, F1, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f2.png" alt="rep 7, F2, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f3.png" alt="rep 7, F3, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f4.png" alt="rep 7, F4, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f5.png" alt="rep 7, F5, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f6.png" alt="rep 7, F6, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f7.png" alt="rep 7, F7, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f8.png" alt="rep 7, F8, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f9.png" alt="rep 7, F9, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f10.png" alt="rep 7, F10, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f11.png" alt="rep 7, F11, from the scan"></td><td class="p-0 align-middle"><img class="crop-cell" src="img/cell-8-f12.png" alt="rep 7, F12, from the scan"></td><td class="p-0 align-middle"></td><td class="p-0 align-middle"></td></tr>
+        <tr><th>human</th><td>7</td><td>29</td><td>10:37</td><td>16</td><td>0</td><td>0</td><td>11</td><td>0.2</td><td>1.2</td><td>1</td><td>3</td><td>6.3</td><td>13*</td><td>11.6</td><td>10.5</td><td>15</td><td>11.3</td><td>10</td><td>8.3</td><td>Feet</td><td>5</td></tr>
+        <tr><th>Google Document AI (Form Parser) <span class="badge text-bg-warning">missed</span></th><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td><td class="mismatch editable" contenteditable="plaintext-only" spellcheck="false"></td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+  
+</section>
+
+
+<h2 class="mt-5" id="problems">Common problems</h2>
+<div class="mb-3">Each example below comes from a real sheet, with what each service read and a possible change to the form or the data entry, for the lab to confirm.</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">* for a broken stipe, written anywhere around the length</h3>
+    <div class="mb-2"><code>20261016_SQPT01_FrondPull_1.8.pdf</code>, page 1. Divers write the * above, after or across the number; services miss it or read it as part of a neighboring value.</div>
+    <img class="crop border mb-2" src="img/crop-3.png" alt="* for a broken stipe, written anywhere around the length">
+    
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      
+      <tr>
+        <th>GPT-6 Sol (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">F4</span> 2.5*</td><td class=""><span class="text-body-secondary small">F5</span> 5.6*</td><td class=""><span class="text-body-secondary small">F7</span> 10*</td><td class=""><span class="text-body-secondary small">F9</span> 9.8*</td><td class="mismatch"><span class="text-body-secondary small">F10</span> 5.3* <span class="text-body-secondary small">(human 11.3*)</span></td><td class=""><span class="text-body-secondary small">F12</span> 4*</td>
+      </tr>
+      
+      <tr>
+        <th>GPT-6 Astra (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">F4</span> 2.5*</td><td class=""><span class="text-body-secondary small">F5</span> 5.6*</td><td class=""><span class="text-body-secondary small">F7</span> 10*</td><td class=""><span class="text-body-secondary small">F9</span> 9.8*</td><td class=""><span class="text-body-secondary small">F10</span> 11.3*</td><td class=""><span class="text-body-secondary small">F12</span> 4*</td>
+      </tr>
+      
+      <tr>
+        <th>Handwriting OCR</th>
+        
+        <td class=""><span class="text-body-secondary small">F4</span> 2.5*</td><td class=""><span class="text-body-secondary small">F5</span> 5.6*</td><td class=""><span class="text-body-secondary small">F7</span> 10*</td><td class=""><span class="text-body-secondary small">F9</span> 9.8*</td><td class=""><span class="text-body-secondary small">F10</span> 11.3*</td><td class=""><span class="text-body-secondary small">F12</span> 4*</td>
+      </tr>
+      
+      <tr>
+        <th>AWS Textract</th>
+        
+        <td class=""><span class="text-body-secondary small">F4</span> 2.5*</td><td class="mismatch"><span class="text-body-secondary small">F5</span> 5.6 <span class="text-body-secondary small">(human 5.6*)</span></td><td class="mismatch"><span class="text-body-secondary small">F7</span> 10 <span class="text-body-secondary small">(human 10*)</span></td><td class="mismatch"><span class="text-body-secondary small">F9</span> 9.8 <span class="text-body-secondary small">(human 9.8*)</span></td><td class="mismatch"><span class="text-body-secondary small">F10</span> 11.3 <span class="text-body-secondary small">(human 11.3*)</span></td><td class="mismatch"><span class="text-body-secondary small">F12</span> * <span class="text-body-secondary small">(human 4*)</span></td>
+      </tr>
+      
+      <tr>
+        <th>Google Document AI (Form Parser)</th>
+        <td class="mismatch">plant not read</td>
+        <td class="mismatch"><span class="text-body-secondary small">F4</span>  <span class="text-body-secondary small">(human 2.5*)</span></td><td class="mismatch"><span class="text-body-secondary small">F5</span>  <span class="text-body-secondary small">(human 5.6*)</span></td><td class="mismatch"><span class="text-body-secondary small">F7</span>  <span class="text-body-secondary small">(human 10*)</span></td><td class="mismatch"><span class="text-body-secondary small">F9</span>  <span class="text-body-secondary small">(human 9.8*)</span></td><td class="mismatch"><span class="text-body-secondary small">F10</span>  <span class="text-body-secondary small">(human 11.3*)</span></td><td class="mismatch"><span class="text-body-secondary small">F12</span>  <span class="text-body-secondary small">(human 4*)</span></td>
+      </tr>
+      
+      </tbody>
+    </table>
+    </div>
+    
+    <div><b>Possible change:</b> A broken-stipe column or checkbox per frond, instead of a mark on the length.</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">E for 11</h3>
+    <div class="mb-2"><code>20261016_SQPT01_FrondPull_1.8.pdf</code>, page 1. E means 11 (E.6 is 11.6), a lab convention no OCR service knows; this project&#39;s code converts it when a service reads the E.</div>
+    <img class="crop border mb-2" src="img/crop-6.png" alt="E for 11">
+    
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      
+      <tr>
+        <th>GPT-6 Sol (OpenAI)</th>
+        
+        <td class="mismatch"><span class="text-body-secondary small">F7</span> 5.6 <span class="text-body-secondary small">(human 11.6)</span></td><td class="mismatch"><span class="text-body-secondary small">F10</span> 5.3 <span class="text-body-secondary small">(human 11.3)</span></td>
+      </tr>
+      
+      <tr>
+        <th>GPT-6 Astra (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">F7</span> 11.6</td><td class=""><span class="text-body-secondary small">F10</span> 11.3</td>
+      </tr>
+      
+      <tr>
+        <th>Handwriting OCR</th>
+        
+        <td class=""><span class="text-body-secondary small">F7</span> 11.6</td><td class=""><span class="text-body-secondary small">F10</span> 11.3</td>
+      </tr>
+      
+      <tr>
+        <th>AWS Textract</th>
+        
+        <td class=""><span class="text-body-secondary small">F7</span> 11.6</td><td class=""><span class="text-body-secondary small">F10</span> 11.3</td>
+      </tr>
+      
+      <tr>
+        <th>Google Document AI (Form Parser)</th>
+        <td class="mismatch">plant not read</td>
+        <td class="mismatch"><span class="text-body-secondary small">F7</span>  <span class="text-body-secondary small">(human 11.6)</span></td><td class="mismatch"><span class="text-body-secondary small">F10</span>  <span class="text-body-secondary small">(human 11.3)</span></td>
+      </tr>
+      
+      </tbody>
+    </table>
+    </div>
+    
+    <div><b>Possible change:</b> Write 11 in full.</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">Dropped decimal points</h3>
+    <div class="mb-2"><code>20261016_SQPT01_FrondPull_1.8.pdf</code>, page 1. Services lose small decimal points and read 2.5 as 25. This project&#39;s code fixes lengths over 31 m, but not smaller ones.</div>
+    <img class="crop border mb-2" src="img/crop-5.png" alt="Dropped decimal points">
+    
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      
+      <tr>
+        <th>GPT-6 Sol (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">F5</span> 15</td><td class=""><span class="text-body-secondary small">F11</span> 2.5*</td><td class=""><span class="text-body-secondary small">F12</span> 2.5*</td>
+      </tr>
+      
+      <tr>
+        <th>GPT-6 Astra (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">F5</span> 15</td><td class=""><span class="text-body-secondary small">F11</span> 2.5*</td><td class=""><span class="text-body-secondary small">F12</span> 2.5*</td>
+      </tr>
+      
+      <tr>
+        <th>Handwriting OCR</th>
+        
+        <td class=""><span class="text-body-secondary small">F5</span> 15</td><td class=""><span class="text-body-secondary small">F11</span> 2.5*</td><td class=""><span class="text-body-secondary small">F12</span> 2.5*</td>
+      </tr>
+      
+      <tr>
+        <th>AWS Textract</th>
+        
+        <td class=""><span class="text-body-secondary small">F5</span> 15</td><td class="mismatch"><span class="text-body-secondary small">F11</span> 25 <span class="text-body-secondary small">(human 2.5*)</span></td><td class=""><span class="text-body-secondary small">F12</span> 2.5*</td>
+      </tr>
+      
+      <tr>
+        <th>Google Document AI (Form Parser)</th>
+        <td class="mismatch">plant not read</td>
+        <td class="mismatch"><span class="text-body-secondary small">F5</span>  <span class="text-body-secondary small">(human 15)</span></td><td class="mismatch"><span class="text-body-secondary small">F11</span>  <span class="text-body-secondary small">(human 2.5*)</span></td><td class="mismatch"><span class="text-body-secondary small">F12</span>  <span class="text-body-secondary small">(human 2.5*)</span></td>
+      </tr>
+      
+      </tbody>
+    </table>
+    </div>
+    
+    <div><b>Possible change:</b> Printed decimal boxes, or a printed decimal point in each cell.</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">Hand-added tag column (Blk)</h3>
+    <div class="mb-2"><code>20261016_SQPT01_FrondPull_1.8.pdf</code>, page 1. Divers add new tag colors by hand to the right of F12, outside the printed table, where table detection doesn&#39;t look.</div>
+    <img class="crop border mb-2" src="img/crop-4.png" alt="Hand-added tag column (Blk)">
+    
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      
+      <tr>
+        <th>GPT-6 Sol (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">tags.blk</span> 5</td>
+      </tr>
+      
+      <tr>
+        <th>GPT-6 Astra (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">tags.blk</span> 5</td>
+      </tr>
+      
+      <tr>
+        <th>Handwriting OCR</th>
+        
+        <td class=""><span class="text-body-secondary small">tags.blk</span> 5</td>
+      </tr>
+      
+      <tr>
+        <th>AWS Textract</th>
+        
+        <td class=""><span class="text-body-secondary small">tags.blk</span> 5</td>
+      </tr>
+      
+      <tr>
+        <th>Google Document AI (Form Parser)</th>
+        <td class="mismatch">plant not read</td>
+        <td class="mismatch"><span class="text-body-secondary small">tags.blk</span>  <span class="text-body-secondary small">(human 5)</span></td>
+      </tr>
+      
+      </tbody>
+    </table>
+    </div>
+    
+    <div><b>Possible change:</b> Print blank extra tag columns on the form.</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">Circled depth unit, and units mixed within a sheet</h3>
+    <div class="mb-2"><code>20261016_SQPT01_FrondPull_1.8.pdf</code>, page 1. Divers circle the unit once in the header (Meters here), but write some rows in feet (29ft). OCR services don&#39;t report which word the diver circled.</div>
+    <img class="crop border mb-2" src="img/crop-3.png" alt="Circled depth unit, and units mixed within a sheet">
+    
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      
+      <tr>
+        <th>GPT-6 Sol (OpenAI)</th>
+        
+        <td class="mismatch"><span class="text-body-secondary small">depth</span> 29 <span class="text-body-secondary small">(human 29.5)</span></td><td class=""><span class="text-body-secondary small">depth_unit</span> Feet</td>
+      </tr>
+      
+      <tr>
+        <th>GPT-6 Astra (OpenAI)</th>
+        
+        <td class="mismatch"><span class="text-body-secondary small">depth</span> 29 <span class="text-body-secondary small">(human 29.5)</span></td><td class=""><span class="text-body-secondary small">depth_unit</span> Feet</td>
+      </tr>
+      
+      <tr>
+        <th>Handwriting OCR</th>
+        
+        <td class="mismatch"><span class="text-body-secondary small">depth</span> 29 <span class="text-body-secondary small">(human 29.5)</span></td><td class=""><span class="text-body-secondary small">depth_unit</span> Feet</td>
+      </tr>
+      
+      <tr>
+        <th>AWS Textract</th>
+        
+        <td class=""><span class="text-body-secondary small">depth</span> 29.5</td><td class="mismatch"><span class="text-body-secondary small">depth_unit</span>  <span class="text-body-secondary small">(human Feet)</span></td>
+      </tr>
+      
+      <tr>
+        <th>Google Document AI (Form Parser)</th>
+        <td class="mismatch">plant not read</td>
+        <td class="mismatch"><span class="text-body-secondary small">depth</span>  <span class="text-body-secondary small">(human 29.5)</span></td><td class="mismatch"><span class="text-body-secondary small">depth_unit</span>  <span class="text-body-secondary small">(human Feet)</span></td>
+      </tr>
+      
+      </tbody>
+    </table>
+    </div>
+    
+    <div><b>Possible change:</b> A unit column (m / ft) on each row.</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">Site written in the OBS/BUD box</h3>
+    <div class="mb-2"><code>20261016_SQPT01_FrondPull_1.8.pdf</code>, page 1. Here the site code is in the OBS/BUD box and the SITE box is empty.</div>
+    <img class="crop border mb-2" src="img/crop-2.png" alt="Site written in the OBS/BUD box">
+    
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      
+      <tr>
+        <th>GPT-6 Sol (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">OBS/BUD</span> SAP101 AW/AD/SC</td><td class=""><span class="text-body-secondary small">site used</span> SQPT01</td>
+      </tr>
+      
+      <tr>
+        <th>GPT-6 Astra (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">OBS/BUD</span> SQPT01 AW/ADY/SC</td><td class=""><span class="text-body-secondary small">site used</span> SQPT01</td>
+      </tr>
+      
+      <tr>
+        <th>Handwriting OCR</th>
+        
+        <td class=""><span class="text-body-secondary small">OBS/BUD</span> AW/ADM/SC</td><td class=""><span class="text-body-secondary small">site used</span> SQPT01</td>
+      </tr>
+      
+      <tr>
+        <th>AWS Textract</th>
+        
+        <td class=""><span class="text-body-secondary small">OBS/BUD</span> SQPT01 AW/ADN/SC</td><td class=""><span class="text-body-secondary small">site used</span> SQPT01</td>
+      </tr>
+      
+      <tr>
+        <th>Google Document AI (Form Parser)</th>
+        
+        <td class=""><span class="text-body-secondary small">OBS/BUD</span> </td><td class=""><span class="text-body-secondary small">site used</span> SQPT01</td>
+      </tr>
+      
+      </tbody>
+    </table>
+    </div>
+    
+    <div><b>Possible change:</b> Data-entry guidance: site in the SITE box only.</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">Tick marks beside reps</h3>
+    <div class="mb-2"><code>20260731_KF01S_FrondPull_1.8.pdf</code>, page 1. Divers tick plants off; services read the tick as a letter (J 1, V 2).</div>
+    <img class="crop border mb-2" src="img/crop-0.png" alt="Tick marks beside reps">
+    
+    <div class="table-responsive">
+    <table class="table table-sm mb-2">
+      <tbody>
+      
+      <tr>
+        <th>GPT-6 Sol (OpenAI)</th>
+        
+        <td class=""><span class="text-body-secondary small">rep</span> 1</td>
+      </tr>
+      
+      <tr>
+        <th>AWS Textract</th>
+        
+        <td class=""><span class="text-body-secondary small">rep</span> 1</td>
+      </tr>
+      
+      <tr>
+        <th>Google Document AI (Form Parser)</th>
+        <td class="mismatch">plant not read</td>
+        <td class="mismatch"><span class="text-body-secondary small">rep</span>  <span class="text-body-secondary small">(human 1)</span></td>
+      </tr>
+      
+      </tbody>
+    </table>
+    </div>
+    
+    <div><b>Possible change:</b> Data-entry guidance, or a separate checkbox for ticking off.</div>
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-body">
+    <h3 class="h5">Transferred pages</h3>
+    <div class="mb-2"><code>20260921_BR01D_FrondPull_1.8.pdf</code>, page 2. Page 2 repeats plants from page 1 (here rep 3), copied onto a clean page. Scoring ignores the copies, but a production system has to tell copies from new plants.</div>
+    <img class="crop border mb-2" src="img/crop-1.png" alt="Transferred pages">
+    
+    <div><b>Possible change:</b> Scanning convention: scan the clean copy only, or mark copies.</div>
+  </div>
+</div>
+
+<div class="card mb-4"><div class="card-body">
+  <h3 class="h5">The oversized scan</h3>
+  <div>The scanner stored <code>20261016_SQPT02_FrondPull_1.8.pdf</code> at about three times the usual page size (about 33 × 25 inches), so at 300 dpi its page comes to 9,834 × 7,575 pixels, over OpenAI's image limit. The pipeline now scales every page to the same size before sending it to the LLM. <b>Possible change:</b> a fixed page size in the scanner settings.</div>
+</div></div>
+
+<h2 class="mt-5" id="maintenance">Maintenance, per service</h2>
+<div class="mb-3">What a lab member would have to do to keep each service working.</div>
+<dl>
+  <dt>GPT-6 Sol / Astra (OpenAI)</dt>
+  <dd>When OpenAI retires a model, replace its ID in <code>MODELS</code> (<code>comparison/llm_api/config.py</code>), then rerun and rescore to check that the new model reads as well; prices and behavior can change between models. Keep the API key in <code>local.env</code>, and billing on the OpenAI account.</dd>
+  <dt>Handwriting OCR</dt>
+  <dd>The custom extractor lives only in the vendor's dashboard. The API can list extractors but can't read, create or export their fields, so keep a written copy of the extractor's definition in the repo, to rebuild it if it's lost. Each new tag color needs a new field in the dashboard. Buy page credits by hand, in blocks of 100 that last a year; the API shows the balance, but buying credits through it needs a subscription. Keep the API key in <code>local.env</code>.</dd>
+  <dt>AWS Textract</dt>
+  <dd>Textract's API is stable, but this project has the most mapping code for it (<code>comparison/aws_textract/map.py</code>): reading the header from label lines, finding the hand-added tag column outside the table, ignoring tick marks beside reps. A change to the form will likely need a change there. Keep AWS credentials and the S3 bucket.</dd>
+  <dt>Google Document AI (Form Parser)</dt>
+  <dd>Not recommended (see results by service). To keep it: the processor in the Google Cloud console, and the service account key.</dd>
+  <dt>Every service</dt>
+  <dd>Update the shared conventions in <code>comparison/grid.py</code> and the known site codes (<code>KNOWN_SITES</code>, <code>comparison/config.py</code>) when the form or the data entry changes. <code>KNOWN_SITES</code> lives in the repo for now, so a new site means a code change; reading it from a Google Sheet instead would let lab members add sites without touching code.</dd>
+</dl>
+
+<h2 class="mt-5" id="reproduce">How to reproduce</h2>
+<pre class="bg-body-tertiary p-3"><code>make prep                                   # rotate the scans, upload the preprocessed PDFs
+make answers                                # parse the human entry
+make extract SERVICE=&lt;service&gt; FILES=data/fronds_sample.txt     # and FILES=data/fronds_remaining.txt
+make map SERVICE=&lt;service&gt;
+make validate SERVICE=&lt;service&gt;
+make score SERVICE=&lt;service&gt;
+make report                                 # this page</code></pre>
+<div class="mb-3">Services: <code>aws_textract</code>, <code>google_document_ai</code>, <code>handwriting_ocr</code>, <code>llm_api</code> (every model in <code>MODELS</code>). Handwriting OCR takes <code>FILES=data/fronds_handwriting_ocr.txt</code>. <code>make extract</code> skips files it already has results for; <code>make clean-results SERVICE=&lt;service&gt;</code> clears them to run again.</div>
+
+</main>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  // Mark a corrected value once someone edits it.
+  for (const cell of document.querySelectorAll("td.editable")) {
+    cell.addEventListener("input", () => cell.classList.add("edited"));
+  }
+</script>
+</body>
+</html>
