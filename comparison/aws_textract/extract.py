@@ -1,8 +1,11 @@
-"""Run AWS Textract on preprocessed survey PDFs in S3 and save each raw response.
+"""Run AWS Textract on preprocessed survey PDFs and save each raw response.
 
 Every file goes through the asynchronous StartDocumentAnalysis /
 GetDocumentAnalysis API, which takes single- and multi-page PDFs alike, so
-there is one code path. Responses are saved unmodified (apart from joining
+there is one code path. That API reads only from S3, so each PDF is uploaded
+from data/preprocessed/ to S3_BUCKET under the same key before its job
+starts, and deleted from the bucket once the job finishes. Responses are
+saved unmodified (apart from joining
 result pages) to data/results/aws_textract/<file>.raw.json. A file whose
 raw.json already exists is skipped; to run it again, clear the results
 (make clean-results SERVICE=aws_textract).
@@ -71,6 +74,7 @@ def extract(files: list[str]) -> None:
     bucket = os.environ["S3_BUCKET"]
     region = os.environ["AWS_REGION"]
     textract = boto3.client("textract", region_name=region)
+    s3 = boto3.client("s3", region_name=region)
     outputs = {
         name: Path("data/results/aws_textract", f"{Path(name).stem}.raw.json")
         for name in files
@@ -80,14 +84,16 @@ def extract(files: list[str]) -> None:
             log.info(f"{name}: {output} exists, skipped")
     # Start every job before waiting on any, so Textract works on them in
     # parallel.
-    jobs = {
-        name: start_job(textract, bucket, name)
-        for name, output in outputs.items()
-        if not output.exists()
-    }
+    jobs: dict[str, str] = {}
+    for name, output in outputs.items():
+        if output.exists():
+            continue
+        s3.upload_file(str(Path("data/preprocessed") / name), bucket, name)
+        jobs[name] = start_job(textract, bucket, name)
     log.info(f"started {len(jobs)} Textract jobs")
     for name, job_id in jobs.items():
         response = wait_for_job(textract, job_id)
+        s3.delete_object(Bucket=bucket, Key=name)
         output = outputs[name]
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(json.dumps(response))
@@ -105,7 +111,8 @@ def main() -> None:
         "--files",
         type=Path,
         required=True,
-        help="text file listing one PDF S3 key per line, e.g. Fronds/x.pdf",
+        help="text file listing one PDF per line, under data/preprocessed/,"
+        " e.g. Fronds/x.pdf",
     )
     args = parser.parse_args()
     files = args.files.read_text().split()

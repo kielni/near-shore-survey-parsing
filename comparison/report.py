@@ -1,4 +1,4 @@
-"""Gather the saved results into one static report: comparison/report/report.html.
+"""Gather the saved results into one static report: report/report.html.
 
 Reads each service's scores.json, the mapped
 results and the human entry (data/fronds_answers.tsv, a copy of
@@ -31,7 +31,7 @@ from comparison.validate import LOW_CONFIDENCE
 
 log = logging.getLogger("report")
 
-OUTPUT = Path("comparison/report/report.html")
+OUTPUT = Path("report/report.html")
 IMAGES = OUTPUT.parent / "img"
 RESULTS = Path("data/results")
 
@@ -225,7 +225,7 @@ PROBLEMS: list[Problem] = [
 
 
 def write_image(content: bytes, name: str) -> str:
-    """Write an image to comparison/report/img and return its path from the report."""
+    """Write an image to report/img and return its path from the report."""
     (IMAGES / name).write_bytes(content)
     return f"{IMAGES.name}/{name}"
 
@@ -461,7 +461,7 @@ def problem_readings(
 
 
 def build_crops() -> dict[tuple[str, int, int], str]:
-    """Render every common problem's crop, once, to comparison/report/img.
+    """Render every common problem's crop, once, to report/img.
 
     Returns the image path for each (file, page, row), row 0 being the
     header band.
@@ -503,7 +503,7 @@ def build_cell_crops() -> dict[int, dict[str, str]]:
 
 
 def main() -> None:
-    """Gather the results and write comparison/report/report.html."""
+    """Gather the results and write report/report.html."""
     configure_logging()
     IMAGES.mkdir(parents=True, exist_ok=True)
     crop_ids = build_crops()

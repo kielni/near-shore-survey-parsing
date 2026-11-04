@@ -1,4 +1,4 @@
 local.env
-data/results/
+comparison/data/results/
 __pycache__
 google-service-account.json

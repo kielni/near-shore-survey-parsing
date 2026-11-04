@@ -5,7 +5,7 @@ Clear and rewrite on every run; switch to append for ongoing use.
 Use the same layout as the human entry sheet
 (productivity_survey_FIRST_ENTRY - fronds_pull_down_long.tsv): one row per frond,
 only what the service read, in sheet order (file, page, row, frond).
-Copy site type and zone from the site list in the answers file; leave observer and 
+Copy site type and zone from the site list in the answers file; leave observer and
 buddy blank. Highlight low confidence cells, if available.
 
 Set GOOGLE_SHEET_ID in local.env and share the sheet to the service account email

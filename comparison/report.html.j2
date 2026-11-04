@@ -178,7 +178,8 @@
 </dl>
 
 <h2 class="mt-5" id="reproduce">How to reproduce</h2>
-<pre class="bg-body-tertiary p-3"><code>make prep                                   # rotate the scans, upload the preprocessed PDFs
+<div class="mb-3">Run these from <code>comparison/</code>, where its <code>Makefile</code> lives; every path, <code>FILES</code> included, is relative to that folder.</div>
+<pre class="bg-body-tertiary p-3"><code>make prep                                   # rotate the scans
 make answers                                # parse the human entry
 make extract SERVICE=&lt;service&gt; FILES=data/fronds_sample.txt     # and FILES=data/fronds_remaining.txt
 make map SERVICE=&lt;service&gt;

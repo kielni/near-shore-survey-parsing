@@ -20,7 +20,7 @@
 <main class="container py-4">
 
 <h1>Kelp frond sheets: OCR comparison</h1>
-<div class="text-body-secondary mb-3">Generated 2026-11-04 from commit <code>4c4fbee</code>. The commands at the end reproduce it.</div>
+<div class="text-body-secondary mb-3">Generated 2026-11-04 from commit <code>6dbfc7e</code>. The commands at the end reproduce it.</div>
 
 <h2 class="mt-5" id="services">The services</h2>
 <div class="mb-3">This comparison tests automated parsing of frond pull-down sheets. It tried five services:</div>
@@ -33,7 +33,7 @@
   <dd>OpenAI&#39;s larger model, with the same instructions as Sol; it costs about 7 times as much. It read the 5 sample sheets only.</dd>
 
   <dt><a href="https://www.handwritingocr.com/">Handwriting OCR</a></dt>
-  <dd>A handwriting transcription service. A custom extractor, set up in its dashboard, returns the sheet&#39;s fields. It read page 1 of the 5 sample sheets (its free trial).</dd>
+  <dd>A handwriting transcription service. A custom extractor, set up in its dashboard, returns the sheet&#39;s fields. It read page 1 of the 5 sample sheets (free trial limit).</dd>
 
   <dt><a href="https://aws.amazon.com/textract/">AWS Textract</a></dt>
   <dd>Amazon&#39;s document OCR. It finds tables and form fields and returns text with positions and confidence; this project&#39;s code turns its table into the sheet&#39;s fields.</dd>
@@ -89,7 +89,7 @@
   <td class="text-end">11 of 37</td>
   <td class="text-end">15</td>
   <td class="text-end">0</td>
-  <td class="text-end" title="$15 per 100 pages, pay as you go">$0.150</td>
+  <td class="text-end" title="$15 per 100 pages, pay as you go; 5 page free trial">$0.150</td>
 </tr>
 
 <tr>
@@ -1007,7 +1007,8 @@
 </dl>
 
 <h2 class="mt-5" id="reproduce">How to reproduce</h2>
-<pre class="bg-body-tertiary p-3"><code>make prep                                   # rotate the scans, upload the preprocessed PDFs
+<div class="mb-3">Run these from <code>comparison/</code>, where its <code>Makefile</code> lives; every path, <code>FILES</code> included, is relative to that folder.</div>
+<pre class="bg-body-tertiary p-3"><code>make prep                                   # rotate the scans
 make answers                                # parse the human entry
 make extract SERVICE=&lt;service&gt; FILES=data/fronds_sample.txt     # and FILES=data/fronds_remaining.txt
 make map SERVICE=&lt;service&gt;
