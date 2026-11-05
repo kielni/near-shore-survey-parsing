@@ -20,23 +20,23 @@
 <main class="container py-4">
 
 <h1>Kelp frond sheets: OCR comparison</h1>
-<div class="text-body-secondary mb-3">Generated 2026-11-04 from commit <code>6dbfc7e</code>. The commands at the end reproduce it.</div>
+<div class="text-body-secondary mb-3">Generated 2026-11-05 from commit <code>f10b198</code>. The commands at the end reproduce it.</div>
 
 <h2 class="mt-5" id="services">The services</h2>
 <div class="mb-3">This comparison tests automated parsing of frond pull-down sheets. It tried five services:</div>
 <dl>
 
   <dt><a href="https://platform.openai.com/docs/models">GPT-6 Sol (OpenAI)</a></dt>
-  <dd>OpenAI&#39;s lower-cost language model. It reads each page image and returns every field as written; this project&#39;s code applies the sheet&#39;s conventions.</dd>
+  <dd>A language model that reads each page image and returns every field as written.</dd>
 
   <dt><a href="https://platform.openai.com/docs/models">GPT-6 Astra (OpenAI)</a></dt>
-  <dd>OpenAI&#39;s larger model, with the same instructions as Sol; it costs about 7 times as much. It read the 5 sample sheets only.</dd>
+  <dd>A larger language model than Sol, at about 7 times the cost, that reads each page image and returns every field as written.</dd>
 
   <dt><a href="https://www.handwritingocr.com/">Handwriting OCR</a></dt>
-  <dd>A handwriting transcription service. A custom extractor, set up in its dashboard, returns the sheet&#39;s fields. It read page 1 of the 5 sample sheets (free trial limit).</dd>
+  <dd>A handwriting transcription service, with a custom extractor set up in its dashboard to return the sheet&#39;s fields.</dd>
 
   <dt><a href="https://aws.amazon.com/textract/">AWS Textract</a></dt>
-  <dd>Amazon&#39;s document OCR. It finds tables and form fields and returns text with positions and confidence; this project&#39;s code turns its table into the sheet&#39;s fields.</dd>
+  <dd>Amazon&#39;s document OCR, which finds tables and form fields and returns text with positions and confidence.</dd>
 
   <dt><a href="https://cloud.google.com/document-ai">Google Document AI (Form Parser)</a></dt>
   <dd>Google&#39;s ready-made processor for tables and form fields.</dd>
@@ -52,7 +52,7 @@
 <div class="table-responsive">
 <table class="table table-sm table-striped align-middle">
 <thead><tr>
-  <th>Service</th><th class="text-end">Sheets</th><th class="text-end">Pages</th><th class="text-end">Cells</th><th class="text-end">Matching</th><th class="text-end">Rows matching</th><th class="text-end">Mismatches per sheet</th><th class="text-end">Missed plants</th><th class="text-end">Per page</th>
+  <th>Service</th><th class="text-end">PDFs</th><th class="text-end">Pages</th><th class="text-end">Cells</th><th class="text-end">Matching</th><th class="text-end">Rows matching</th><th class="text-end">Mismatches per sheet</th><th class="text-end">Missed plants</th><th class="text-end">Per page</th>
 </tr></thead>
 <tbody>
 
@@ -119,8 +119,8 @@
 </tbody>
 </table>
 </div>
-<div class="small text-body-secondary mb-3"><b>Sheet</b>: one survey's scan (one date and site); <b>pages</b> counts its paper sheets, as a survey can fill several. <br>
-<b>Matching</b>: the share of compared cells that agree with the human entry. Br>
+<div class="small text-body-secondary mb-3"><b>PDF</b>: one survey's scan (one date and site); <b>pages</b> counts its paper sheets, as a survey can fill several. <br>
+<b>Matching</b>: the share of compared cells that agree with the human entry. <br>
 <b>Mismatches per sheet</b>: the cells someone would check for each sheet, the reconciliation workload.<br>
 <b>Missed plants</b>: plants in the human entry with no row read (counted only where the service read every page). Hover over a price to see its source.</div>
 <div></div>

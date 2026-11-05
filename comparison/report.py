@@ -51,32 +51,29 @@ SERVICES = [
         folder="llm_api/gpt-6-sol",
         name="GPT-6 Sol (OpenAI)",
         url="https://platform.openai.com/docs/models",
-        description="OpenAI's lower-cost language model. It reads each page image "
-        "and returns every field as written; this project's code applies the "
-        "sheet's conventions.",
+        description="A language model that reads each page image and returns "
+        "every field as written.",
     ),
     Service(
         folder="llm_api/gpt-6-astra",
         name="GPT-6 Astra (OpenAI)",
         url="https://platform.openai.com/docs/models",
-        description="OpenAI's larger model, with the same instructions as Sol; "
-        "it costs about 7 times as much. It read the 5 sample sheets only.",
+        description="A larger language model than Sol, at about 7 times the "
+        "cost, that reads each page image and returns every field as written.",
     ),
     Service(
         folder="handwriting_ocr",
         name="Handwriting OCR",
         url="https://www.handwritingocr.com/",
-        description="A handwriting transcription service. A custom extractor, set "
-        "up in its dashboard, returns the sheet's fields. It read page 1 of the 5 "
-        "sample sheets (free trial limit).",
+        description="A handwriting transcription service, with a custom "
+        "extractor set up in its dashboard to return the sheet's fields.",
     ),
     Service(
         folder="aws_textract",
         name="AWS Textract",
         url="https://aws.amazon.com/textract/",
-        description="Amazon's document OCR. It finds tables and form fields and "
-        "returns text with positions and confidence; this project's code turns its "
-        "table into the sheet's fields.",
+        description="Amazon's document OCR, which finds tables and form fields "
+        "and returns text with positions and confidence.",
     ),
     Service(
         folder="google_document_ai",

@@ -14,6 +14,8 @@ This project tests whether automated parsing services could replace one of those
 
 ## Methodology
 
+To verify the workflow, I started with the same set of 5 PDFs for each service. After confirming that the code worked as I expected, I parsed the 17 remaining sheets with GPT-6 Astra, AWS Textract, and Google Document AI. I did not parse the remaining sheets with Handwriting OCR or GPT-6 Astra. Handwriting OCR offers a free trial limited to 5 pages. GPT-6 Astra scored a few points higher than GPT-6 Sol, but not by enough to justify its price.
+
 A preprocessing step (`make prep`) rotates the scanned sheets so that they are landscape and right side up. Every service starts from these preprocessed PDFs.
 
 Then each service runs its own version of two steps (`make <step> SERVICE=<service>`):
@@ -38,7 +40,7 @@ Claude (Claude Code) wrote most of the code, working from the project owner's pl
 
 ## Results
 
-| Service | Sheets | Pages | Cells | Matching | Rows matching | Mismatches per sheet | Missed plants | Per page |
+| Service | PDFs | Pages | Cells | Matching | Rows matching | Mismatches per sheet | Missed plants | Per page |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|
 | GPT-6 Astra (OpenAI) | 5 | 8 | 1,107 | 93.9% | 15 of 39 | 14 | 1 | $0.340 |
 | Handwriting OCR | 5 | 5 | 1,041 | 92.9% | 11 of 37 | 15 | 0 | $0.150 |
@@ -46,7 +48,7 @@ Claude (Claude Code) wrote most of the code, working from the project owner's pl
 | AWS Textract | 22 | 36 | 4,330 | 74.0% | 1 of 182 | 51 | 4 | $0.065 |
 | Google Document AI (Form Parser) | 22 | 36 | 1,853 | 13.1% | 0 of 152 | 73 | 135 | $0.030 |
 
-**Sheet**: one survey's scan (one date and site); **pages** counts its paper sheets, as a survey can fill several.\
+**PDF**: one survey's scan (one date and site); **pages** counts its paper sheets, as a survey can fill several.\
 **Matching**: the share of compared cells that agree with the human entry.\
 **Mismatches per sheet**: the cells someone would check for each sheet; a proxy for the reconciliation workload.\
 **Missed plants**: plants in the human entry with no row read (counted only where the service read every page).

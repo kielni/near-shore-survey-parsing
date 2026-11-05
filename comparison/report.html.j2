@@ -31,16 +31,20 @@
 {% endfor %}
 </dl>
 
-<h2 class="mt-5" id="method">What this compares, and how</h2>
+<div class="mb-3">
+To verify the workflow, I started with the same set of 5 PDFs for each service. After confirming that the code worked as I expected, I parsed the 17 remaining sheets with GPT-6 Astra, AWS Textract, and Google Document AI. I did not parse the remaining sheets with Handwriting OCR or GPT-6 Astra. Handwriting OCR offers a free trial limited to 5 pages; after that, its Pay as You Go plan costs $15 for 100 pages. GPT-6 Astra scored a few points higher than GPT-6 Sol, but not by enough to justify its price.
+</div>
+
+<h2 class="mt-5" id="method">Results</h2>
 <div class="mb-3">This comparison checks each service's reading of the scanned sheets against the lab's first data entry, <code>productivity_survey_FIRST_ENTRY - fronds_pull_down_long.tsv</code> (renamed to <code>data/fronds_answers.tsv</code> in the code). A mismatch marks a cell someone would check during reconciliation.</div>
 <div class="mb-3">Two cells match if their values agree after normalizing (<code>7</code> and <code>7.0</code> match, and times compare as HH:MM), so formatting differences don't count. The comparison pairs plants by rep, then by agreeing values. It skips cells blank in both, and doesn't compare observers.</div>
 <div class="mb-3">22 sheets of form version 1.8 have a human entry. GPT-6 Sol, Textract and Form Parser read all 22; GPT-6 Astra read 5 of them, and Handwriting OCR read page 1 of those 5.</div>
 
-<h2 class="mt-5" id="results">Results by service</h2>
+<h3 class="mt-5" id="results">Results by service</h3>
 <div class="table-responsive">
 <table class="table table-sm table-striped align-middle">
 <thead><tr>
-  <th>Service</th><th class="text-end">Sheets</th><th class="text-end">Pages</th><th class="text-end">Cells</th><th class="text-end">Matching</th><th class="text-end">Rows matching</th><th class="text-end">Mismatches per sheet</th><th class="text-end">Missed plants</th><th class="text-end">Per page</th>
+  <th>Service</th><th class="text-end">PDFs</th><th class="text-end">Pages</th><th class="text-end">Cells</th><th class="text-end">Matching</th><th class="text-end">Rows matching</th><th class="text-end">Mismatches per sheet</th><th class="text-end">Missed plants</th><th class="text-end">Per page</th>
 </tr></thead>
 <tbody>
 {% for s in services %}
@@ -59,7 +63,7 @@
 </tbody>
 </table>
 </div>
-<div class="small text-body-secondary mb-3"><b>Sheet</b>: one survey's scan (one date and site); <b>pages</b> counts its paper sheets, as a survey can fill several. <br>
+<div class="small text-body-secondary mb-3"><b>PDF</b>: one survey's scan (one date and site); <b>pages</b> counts its paper sheets, as a survey can fill several. <br>
 <b>Matching</b>: the share of compared cells that agree with the human entry. <br>
 <b>Mismatches per sheet</b>: the cells someone would check for each sheet, the reconciliation workload.<br>
 <b>Missed plants</b>: plants in the human entry with no row read (counted only where the service read every page). Hover over a price to see its source.</div>
